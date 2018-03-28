@@ -5,7 +5,10 @@ from nltk.stem.snowball import SnowballStemmer                  # Stemmer - Snow
 from typing import List                                         # Anotação de help quando uma função é escrita
 import string                                                   # Lista de caracteres de pontuação
 from sklearn.feature_extraction.text import CountVectorizer     # Bag of Words
-
+import os                                                       # Miscellaneous operating system interfaces
+import re                                                       # Regular Expressions
+import random                                                   # Python Random Library
+    
 """
 -------------------- Preprocessor --------------------
 Properties:
@@ -213,3 +216,55 @@ class Preprocessor():
     def bagOfWords(self, listOfWords: List[str]):
         text = " ".join(listOfWords)
         return bagOfWordsForTextInString(text)
+
+    """
+    8) Erase Emails 
+    - FUNÇÃO  : recebe uma lista de strings e apaga todos os emails dentro dela
+    - RETORNO : retorna uma lista de string sem e-mails dentro dela
+    """
+    def eraseEmails(self,listOfTexts:List[str]) -> List[str]:
+        regex = re.compile('([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)')
+        for index, text in enumerate(listOfTexts):
+            newText = re.sub(regex, '', text)
+            listOfTexts[index] = newText
+        return listOfTexts
+    
+    """
+    9) Read All Texts
+    - FUNÇÃO  : recebe uma string com o caminho até a pasta com os dados,
+                        remove os headers irrelevantes pra análise do texto e
+                        remove os emails dentro do texto
+    - RETORNO : retorna uma lista de string com cada um dos textos em uma string
+    """
+
+    def readAllText(self,directory:str = os.getcwd()+'/database/' ) -> List[str]:
+        listOfFiles = os.listdir(directory)
+        ignoredLines = ['Newsgroup:','Document_id:','document_id:','From:']
+        allNews = []
+        news = ''
+        for fileName in listOfFiles:
+            suffix = '.txt'
+            #Apenas lê arquivos . txt (ignora arquivos .csv)
+            if(fileName.endswith(suffix)):
+                with open(directory+fileName ,'r', encoding='latin-1' ) as textfile:
+                    for fileLine in textfile:
+                        readLine = True
+                        line = fileLine.lstrip().replace('\n', '')
+                        #verifica se é uma linha de header
+                        for ignoredStrings in ignoredLines:
+                            if(line.startswith(ignoredStrings)):
+                                readLine = False
+                                breakNewsBlock = True
+                                break
+                        if(readLine):
+                            #Se for uma linha valida e tiver passado por um header, adiciona nova string ao vetor
+                            if(breakNewsBlock and news != ''):
+                                allNews.append(news)
+                                news = ''
+                                breakNewsBlock = False
+                            news += line
+            allNews.append(news)
+        allNews = self.eraseEmails(allNews)
+        random.shuffle(allNews)
+        return allNews
+
