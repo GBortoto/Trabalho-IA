@@ -37,8 +37,8 @@ class ProcessaVetorTexto():
         FUNCAO: Identificar o quão frequente é determinada palavra dentro de um corpus, normalizando em relação as outras palavras  | #aparicoes/#total
         RETORNO: Retornar a % (frequencia) com que determinada palavra aparece dentro de um corpus
     """
-    def tf_n(self, palavra, hash_map):
-        return (hash_map[palavra]/sum(hash_map.values()))
+    def tf_n(self, numero_texto, palavra):
+        return (self.hash_maps[numero_texto][palavra]/sum(self.hash_maps[numero_texto].values()))
       
     #ERROR - Encontrando 20 "The" em 21 textos - muito improvável não ter palavra "the" em qql texto
     """
@@ -46,9 +46,11 @@ class ProcessaVetorTexto():
         FUNCAO: Identificar a somatória de quantas vezes uma determinada palavras esta contida nos textos de um determinado corpus | sum(texto_contem(palavra))
         RETORNO: sum(texto_contem(palavra))
     """
-    def word_containing(self, palavra, tokens):
-        somatoria = sum(1 if palavra in token else 0 for token in tokens)
-        #print('Somatoria', str(somatoria))
+    def word_containing(self, palavra):
+        somatoria = 0
+        for iterador in range(self.numero_textos):
+            if palavra in self.hash_maps[iterador]:
+                somatoria += 1
         return somatoria
 
     """
@@ -57,10 +59,10 @@ class ProcessaVetorTexto():
         RETORNO: log(#palavras) / word_containing(palavra)
     """
     # IDF - Inverse Document Frequency
-    def idf(self, palavra, tokens):
-        log = math.log(len(tokens))
+    def idf(self, palavra):
+        log = math.log([len(texto) for texto in self.textos])
         #print('Log', str(log))
-        dividendo = (1 + word_containing(palavra, tokens))
+        dividendo = (1 + word_containing(palavra))
         #print('Dividendo', dividendo)
         resultado = log / dividendo
         #print('Resultado', resultado)
