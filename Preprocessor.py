@@ -38,6 +38,8 @@ Methods:
 
     7-aux) bagOfWordsForTextInString(self, text: str)
         7) bagOfWords(self, listOfWords: List[str])
+        
+    
 """
 
 class Preprocessor():
@@ -230,41 +232,98 @@ class Preprocessor():
         return listOfTexts
     
     """
-    9) Read All Texts
-    - FUNÇÃO  : recebe uma string com o caminho até a pasta com os dados,
-                        remove os headers irrelevantes pra análise do texto e
+    9) readTexts
+    - FUNÇÃO  : recebe - directory: uma string com o caminho até a pasta com os dados, 
+                         ignoredLines: Array de strings, não ocorrerá a leitura das 
+                                        linhas que forem iniciadas com um desses valores
+                        suffix: só lê os documentos que terminarem com esse sufixo
+                                    
+                faz:    remove os headers irrelevantes pra análise do texto e
                         remove os emails dentro do texto
+                        apenas lê os documentos com o sufixo determinado
+                        
     - RETORNO : retorna uma lista de string com cada um dos textos em uma string
     """
 
-    def readAllText(self,directory:str = os.getcwd()+'/database/' ) -> List[str]:
-        listOfFiles = os.listdir(directory)
-        ignoredLines = ['Newsgroup:','Document_id:','document_id:','From:']
+    def readTexts(self, directory:str, ignoredLines:List[str] = [] , suffix:str = '.txt') -> List[str]:
         allNews = []
         news = ''
+        breakNewsBlock = False
+        listOfFiles = os.listdir(directory)
+        print('Lendo arquvos da pasta: ' + directory)
         for fileName in listOfFiles:
-            suffix = '.txt'
-            #Apenas lê arquivos . txt (ignora arquivos .csv)
-            if(fileName.endswith(suffix)):
-                with open(directory+fileName ,'r', encoding='latin-1' ) as textfile:
+            # Apenas lê arquivos com o sufixo passado como parametro
+            if (fileName.endswith(suffix)):
+                with open(directory + fileName, 'r', encoding='latin-1') as textfile:
                     for fileLine in textfile:
                         readLine = True
                         line = fileLine.lstrip().replace('\n', '')
-                        #verifica se é uma linha de header
+                        # verifica se é uma linha de header
                         for ignoredStrings in ignoredLines:
-                            if(line.startswith(ignoredStrings)):
+                            if (line.startswith(ignoredStrings)):
                                 readLine = False
                                 breakNewsBlock = True
                                 break
-                        if(readLine):
-                            #Se for uma linha valida e tiver passado por um header, adiciona nova string ao vetor
-                            if(breakNewsBlock and news != ''):
+                        if (readLine):
+                            # Se for uma linha valida e tiver passado por um header, adiciona nova string ao vetor
+                            if (breakNewsBlock and news != ''):
                                 allNews.append(news)
                                 news = ''
                                 breakNewsBlock = False
                             news += line
             allNews.append(news)
         allNews = self.eraseEmails(allNews)
+        return allNews
+
+    """
+       10) read All 20NewsGroup
+       - FUNÇÃO  : recebe uma string com o caminho até a pasta com os dados do News20Group,
+                           remove os headers irrelevantes pra análise do texto e
+                           remove os emails dentro do texto
+                           randomiza a ordem dos textos.
+       - RETORNO : retorna uma lista de string com cada um dos textos em uma string
+    """
+    def readAll20NewsGroup(self,directory:str = 'database/20NewsGroup/') -> List[str]:
+        ignoredLines = ['Newsgroup:', 'Document_id:', 'document_id:', 'From:']
+        allNews = self.readTexts(directory, ignoredLines)
         random.shuffle(allNews)
         return allNews
 
+    """
+          11) read All Bbc
+          - FUNÇÃO  : recebe uma string com o caminho até a pasta com as pastas da BBC,
+                              remove os headers irrelevantes pra análise do texto e
+                              remove os emails dentro do texto
+                              randomiza a ordem dos textos.
+          - RETORNO : retorna uma lista de string com cada um dos textos em uma string
+       """
+
+    def readAllBbc(self, directory:str='database/bbcFiles/') ->List[str]:
+        listaPastas = os.listdir(directory)
+        allNews = []
+        for pasta in listaPastas:
+            caminho = directory + pasta
+            isPasta = os.path.isdir(caminho)
+            if(isPasta):
+                allNews += self.readTexts(caminho+'/')
+        random.shuffle(allNews)
+        return allNews
+
+    """
+    12) read All Texts From Database 
+    - FUNÇÃO  : recebe: dir20News: uma string com o caminho até a pasta com os dados do 20NewsGroup,
+                               dirBbcFiles: uma string com o caminho até as pastas com as pastas do BBC
+                                
+                               remove os headers irrelevantes pra análise do texto e
+                               remove os emails dentro do texto
+                               randomiza a ordem dos textos.
+    - RETORNO : retorna uma lista de string com cada um dos textos em uma string
+    """
+
+    def readAllTextsFromDatabase(self, dir20News:str ='database/20NewsGroup/' , dirBbcFiles:str = 'database/bbcFiles/') -> List[str]:
+        allNews = []
+        allNews += self.readAll20NewsGroup(dir20News)
+        allNews += self.readAllBbc(dirBbcFiles)
+        random.shuffle(allNews)
+        print(str(len(allNews)) + ' Documentos encontrados.')
+        return allNews
