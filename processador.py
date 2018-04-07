@@ -4,6 +4,7 @@ import os, math
 class ProcessaVetorTexto():
 
     # Inicia e cria variável texto além de criar o hash_map 
+    # Recebe um  subtexto. Assim se corpus = [texto0, texto1, texto2], o ProcessaVetorTexto recebe texto0, depois manualmente pode-se adicionar textos1, etc..
     def __init__(self, subtexto):
         self.textos = []
         self.hash_maps = []
