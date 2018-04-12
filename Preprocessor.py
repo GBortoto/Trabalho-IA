@@ -55,6 +55,7 @@ class Preprocessor():
         self.porterStemmer = PorterStemmer()
         self.snowballStemmer = SnowballStemmer("english", ignore_stopwords=True)
         self.vectorizer = CountVectorizer()
+        self.intervaloDeLog = 2000
 
     """
     1) Leitor de Textos ________________________________________________________
@@ -99,8 +100,16 @@ class Preprocessor():
     def tokenizeTexts(self, listOfTexts: List[str]) -> List[List[str]]:
         """Transforma uma lista de textos em uma lista de listas de palavras"""
         listOfListsOfWords = []
+        intervalo = 0
+        totalTextos = 0
         for text in listOfTexts:
-            listOfListsOfWords.append(aux_tokenize(text))
+            if(intervalo >= self.intervaloDeLog):
+                totalTextos += intervalo
+                print(str(totalTextos) + ' textos foram tokenizados. \n')
+                intervalo = 0
+            intervalo += 1
+            listOfListsOfWords.append(self.aux_tokenize(text))
+        print('Todos os textos foram tokenizados.')
         return listOfListsOfWords
 
     """
@@ -327,3 +336,35 @@ class Preprocessor():
         random.shuffle(allNews)
         print(str(len(allNews)) + ' Documentos encontrados.')
         return allNews
+
+    """
+        processTexts
+        - FUNÇÃO  : recebe: texts - lista de todos os textos puros (com o conteudo original)
+                                  
+                                   separa os textos em palavras
+                                   remove pontuação , números , stop words
+                                   aplica o stemmer no texto 
+        - RETORNO : retorna uma lista com todos os textos e cada texto separado por palavras. 
+                Ex: [texto0[palavra0,palavra1,palavra2], texto1[palavra0,palavra1]]
+        """
+
+    def processTexts(self, texts: List[str]) -> List[List[str]]:
+        #lista de palavras ex: [texto0[palavra0,palavra1,palavra2], texto1[palavra0,palavra1]]
+        print('iniciando processo de tokenização dos textos')
+        listaPalavras = self.tokenizeTexts(texts)
+        listaProcessada =[]
+        intervalo = 0
+        for texto in listaPalavras:
+            if(intervalo > self.intervaloDeLog):
+                totalTextos += intervalo
+                print(str(totalTextos) + ' textos foram processados \n')
+                intervalo = 0
+            intervalo += 1
+            texto = self.removePunctuationFromText(texto)
+            texto = self.removeNumbersFromText(texto)
+            texto = self.removeStopWords(texto)
+            texto = self.applyStemmerOnText(texto)
+            listaProcessada.append(texto)
+        print('todos os textos foram processados')
+        return listaProcessada
+
