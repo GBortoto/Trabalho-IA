@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from nltk.tokenize import word_tokenize                         # Tokenizer
 from nltk.corpus import stopwords                               # Stop Words
 from nltk.stem.porter import *                                  # Stemmer - Porter

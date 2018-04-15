@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os, math
 #texto = ['a', 'b', 'a', 'c', 'd', 'b', 'a']
 #texto2 = ['a', 'q', 'q', 'r', 'r', 'b', 'a']
