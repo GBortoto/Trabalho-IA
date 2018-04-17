@@ -8,6 +8,7 @@ from sklearn.feature_extraction.text import CountVectorizer     # Bag of Words
 import os                                                       # Miscellaneous operating system interfaces
 import re                                                       # Regular Expressions
 import random                                                   # Python Random Library
+from pympler import asizeof
     
 """
 -------------------- Preprocessor --------------------
@@ -58,32 +59,6 @@ class Preprocessor():
         self.intervaloDeLog = 2000
 
     """
-    1) Leitor de Textos ________________________________________________________
-    - FUNÇÃO  : Armazena os textos presentes na pasta input na variável texts
-    - RETORNO : Lista de textos
-    """
-    def readTextsFromFolder(self, directoryPath: str ='../input/') -> List[str]:
-        """Retorna uma lista com os textos presentas na pasta de input"""
-        texts = []
-        labels_index = {}                                   # dictionary mapping label name to numeric id
-        labels = []                                         # list of label ids
-        for name in sorted(os.listdir(directoryPath)):
-                path = os.path.join(directoryPath, name)
-                label_id = len(labels_index)                # Give the text a ID
-                labels_index[name] = label_id               # Add to labels_index (name, index)
-
-                f = open(path, encoding='latin-1')
-                t = f.read()
-                i = t.find('\n\n')                          # skip header
-                if 0 < i:
-                    t = t[i:]
-                texts.append(t)
-                f.close()
-
-                labels.append(label_id)
-        return texts
-
-    """
     2-aux) Tokenizer ___________________________________________________________
     - FUNÇÃO  : Transforma um texto em uma lista de palavras
     - RETORNO : Lista de palavras
@@ -111,7 +86,6 @@ class Preprocessor():
             listOfListsOfWords.append(self.aux_tokenize(text))
         print('Todos os textos foram tokenizados.')
         return listOfListsOfWords
-
     """
     3-aux) Removedor de Pontuação ______________________________________________
     - FUNÇÃO  : Remove o seguinte grupo de caracteres de uma palavra
@@ -275,12 +249,13 @@ class Preprocessor():
                                 break
                         if (readLine):
                             # Se for uma linha valida e tiver passado por um header, adiciona nova string ao vetor
-                            if (breakNewsBlock and news != ''):
+                            if (breakNewsBlock and news != ""):
                                 allNews.append(news)
-                                news = ''
+                                news = ""
                                 breakNewsBlock = False
                             news += line
-            allNews.append(news)
+                    allNews.append(news)
+                    news = ""
         allNews = self.eraseEmails(allNews)
         return allNews
 
@@ -312,9 +287,10 @@ class Preprocessor():
         allNews = []
         for pasta in listaPastas:
             caminho = directory + pasta
+            print(caminho)
             isPasta = os.path.isdir(caminho)
             if(isPasta):
-                allNews += self.readTexts(caminho+'/')
+                allNews.extend(self.readTexts(caminho+'/'))
         random.shuffle(allNews)
         return allNews
 
@@ -335,6 +311,7 @@ class Preprocessor():
         allNews += self.readAllBbc(dirBbcFiles)
         random.shuffle(allNews)
         print(str(len(allNews)) + ' Documentos encontrados.')
+        print("Tamanho total do arquivo da lista em memória: "+ str(asizeof.asizeof(allNews)/8000000) + " MB")
         return allNews
 
     """
@@ -354,8 +331,9 @@ class Preprocessor():
         listaPalavras = self.tokenizeTexts(texts)
         listaProcessada =[]
         intervalo = 0
+        totalTextos = 0
         for texto in listaPalavras:
-            if(intervalo > self.intervaloDeLog):
+            if(intervalo >= self.intervaloDeLog):
                 totalTextos += intervalo
                 print(str(totalTextos) + ' textos foram processados \n')
                 intervalo = 0
@@ -366,5 +344,7 @@ class Preprocessor():
             texto = self.applyStemmerOnText(texto)
             listaProcessada.append(texto)
         print('todos os textos foram processados')
+        print("tamanho total da lista gerada é de " + str(asizeof.asizeof(listaProcessada)/8000000) + " MB")
         return listaProcessada
+
 
