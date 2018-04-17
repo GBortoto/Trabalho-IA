@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 # Dada uma matriz pura, essa classe é responsável por retornar qualquer tipo de matrix customizável
 # corpus[texto0[palavraA, palavraB, palavraC], texto1[palavraX, palavraY, palavraZ]]
@@ -14,6 +15,7 @@ class TransformMatrix():
 		# HashMap
 		# self.words = {self.matrix[0][i]: self.matrix[0][i+1] for i in range(0, len(self.matrix[0]), 2)}
 		self.words = { for words in text}
+		print(self.words)
 
 	def matrix_binaria(self):
 		pass

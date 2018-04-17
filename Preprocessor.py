@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from nltk.tokenize import word_tokenize                         # Tokenizer
 from nltk.corpus import stopwords                               # Stop Words
 from nltk.stem.porter import *                                  # Stemmer - Porter
@@ -348,3 +349,5 @@ class Preprocessor():
         return listaProcessada
 
 
+
+>>>>>>> 2a1130ef11151814c4154a1b88d37b3ecb78fdee
