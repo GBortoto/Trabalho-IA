@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 import os, math
-#texto = ['a', 'b', 'a', 'c', 'd', 'b', 'a']
-#texto2 = ['a', 'q', 'q', 'r', 'r', 'b', 'a']
+
 class ProcessaVetorTexto():
 
-    # Inicia e cria variável texto além de criar o hash_map 
-    # Recebe um  subtexto. Assim se corpus = [texto0, texto1, texto2], o ProcessaVetorTexto recebe texto0, depois manualmente pode-se adicionar textos1, etc..
     def __init__(self, subtexto):
         self.textos = []
         self.hash_maps = []
@@ -27,21 +24,13 @@ class ProcessaVetorTexto():
         return self.numero_textos
 
     """
-        NOME: TF - Term Frequency
-        FUNCAO: Identificar o quão frequente é determinada palavra dentro de um corpus | #aparicoes
-        RETORNO: Retorno #aparicoes com que determinada palavra aparecede em um corpus específico
-    """
-    def tf(self, numero_texto, palavra):
-        return self.hash_maps[numero_texto][palavra]
-        
-    """
         NOME: TF Normalizado - Term Frequency Normalizado
         FUNCAO: Identificar o quão frequente é determinada palavra dentro de um corpus, normalizando em relação as outras palavras  | #aparicoes/#total
         RETORNO: Retornar a % (frequencia) com que determinada palavra aparece dentro de um corpus
     """
     def tf_n(self, numero_texto, palavra):
         return (self.hash_maps[numero_texto][palavra]/sum(self.hash_maps[numero_texto].values()))
-      
+
     #ERROR - Encontrando 20 "The" em 21 textos - muito improvável não ter palavra "the" em qql texto
     """
         NOME: Word Containing
