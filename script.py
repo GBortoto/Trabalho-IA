@@ -1,13 +1,25 @@
 # -*- coding: utf-8 -*-
-#from Preprocessor import Preprocessor
-#from matrix	import matrix as mtx
+
 if __name__ == "__main__":
 	preprocessor = Preprocessor()
 	texts = preprocessor.readAllTextsFromDatabase()
 	#texts contêm todos os textos que serão utilizados de forma que cada index do array tem uma notícia. As notícias não estão tratadas , são o texto puro , retirado apenas os e-mails e em ordem aleatória.
 	texts = preprocessor.processTexts(texts)
+
+	"""
+		[X] - Ler todos os textos
+		[X] - Fazer data clean dos dados
+		[] - Roda Bag of Words para transformar lista de textos em vetor bidimensional de frequencia de palavra por texto
+		[] - Criar 3 outputs do Bag of Words
+			[] - Matrix binaria
+			[] - Matrix tf
+			[] - Matrix tf_idf
+		[] - Rodar K-means para cada matrix
+		[] - Rodar SOM para cada matrix
+		[] - Pos-processamento
+	"""
 # -*- coding: utf-8 -*-
-from nltk.tokenize import word_tokenize                         # Tokenizer
+from nltk.tokenize import word_tokenize, sent_tokenize                         # Tokenizer
 from nltk.corpus import stopwords                               # Stop Words
 from nltk.stem.porter import *                                  # Stemmer - Porter
 from nltk.stem.snowball import SnowballStemmer                  # Stemmer - Snowball
@@ -62,19 +74,14 @@ class Preprocessor():
         self.translate_table_for_punctuation = dict((ord(char), None) for char in string.punctuation)
         self.translate_table_for_numbers = dict((ord(char), None) for char in string.digits)
         self.stopWords = set(stopwords.words('english'))
+
+        # Explicar diferenca entre PorterStemmer; SnowballStemmer e CountVectorizer
         self.porterStemmer = PorterStemmer()
+
+        # Pq só nesse temos ingles e ignore_stopwords?
         self.snowballStemmer = SnowballStemmer("english", ignore_stopwords=True)
         self.vectorizer = CountVectorizer()
         self.intervaloDeLog = 2000
-
-    """
-    2-aux) Tokenizer ___________________________________________________________
-    - FUNÇÃO  : Transforma um texto em uma lista de palavras
-    - RETORNO : Lista de palavras
-    """
-    def aux_tokenize(self, text: str) -> List[str]:
-        """Transforma um texto em uma lista de palavras"""
-        return word_tokenize(text)
 
     """
     2) Tokenizer para Lista de Textos __________________________________________
@@ -92,9 +99,15 @@ class Preprocessor():
                 print(str(totalTextos) + ' textos foram tokenizados. \n')
                 intervalo = 0
             intervalo += 1
-            listOfListsOfWords.append(self.aux_tokenize(text))
+
+            #listOfListsOfWords.append(word_tokenize(text, language='english'))
+            listOfListsOfWords.append([word_tokenize(phrase) for phrase in sent_tokenize(text.translate(dict.fromkeys(string.punctuation)))])
+
+            #Word tokenize roda o Treebank tokenize, porem deveriamos considerar que o texto ja teria rodado pelo sent_tokenize
+            #listOfListsOfWords.append(word_tokenize(sent_tokenize(text, language='english'), language='english'))
         print('Todos os textos foram tokenizados.')
         return listOfListsOfWords
+
     """
     3-aux) Removedor de Pontuação ______________________________________________
     - FUNÇÃO  : Remove o seguinte grupo de caracteres de uma palavra
