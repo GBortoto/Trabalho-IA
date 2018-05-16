@@ -10,7 +10,7 @@ import os                                                       # Miscellaneous 
 import re                                                       # Regular Expressions
 import random                                                   # Python Random Library
 from pympler import asizeof
-    
+
 """
 -------------------- Preprocessor --------------------
 Properties:
@@ -40,8 +40,8 @@ Methods:
 
     7-aux) bagOfWordsForTextInString(self, text: str)
         7) bagOfWords(self, listOfWords: List[str])
-        
-    
+
+
 """
 
 class Preprocessor():
@@ -204,7 +204,7 @@ class Preprocessor():
         return bagOfWordsForTextInString(text)
 
     """
-    8) Erase Emails 
+    8) Erase Emails
     - FUNÇÃO  : recebe uma lista de strings e apaga todos os emails dentro dela
     - RETORNO : retorna uma lista de string sem e-mails dentro dela
     """
@@ -214,18 +214,18 @@ class Preprocessor():
             newText = re.sub(regex, '', text)
             listOfTexts[index] = newText
         return listOfTexts
-    
+
     """
     9) readTexts
-    - FUNÇÃO  : recebe - directory: uma string com o caminho até a pasta com os dados, 
-                         ignoredLines: Array de strings, não ocorrerá a leitura das 
+    - FUNÇÃO  : recebe - directory: uma string com o caminho até a pasta com os dados,
+                         ignoredLines: Array de strings, não ocorrerá a leitura das
                                         linhas que forem iniciadas com um desses valores
                         suffix: só lê os documentos que terminarem com esse sufixo
-                                    
+
                 faz:    remove os headers irrelevantes pra análise do texto e
                         remove os emails dentro do texto
                         apenas lê os documentos com o sufixo determinado
-                        
+
     - RETORNO : retorna uma lista de string com cada um dos textos em uma string
     """
 
@@ -268,7 +268,8 @@ class Preprocessor():
                            randomiza a ordem dos textos.
        - RETORNO : retorna uma lista de string com cada um dos textos em uma string
     """
-    def readAll20NewsGroup(self,directory:str = 'database/20NewsGroup/') -> List[str]:
+    #def readAll20NewsGroup(self,directory:str = 'database/20NewsGroup/') -> List[str]:
+    def readAll20NewsGroup(self,directory:str = '../input/') -> List[str]:
         ignoredLines = ['Newsgroup:', 'Document_id:', 'document_id:', 'From:']
         allNews = self.readTexts(directory, ignoredLines)
         random.shuffle(allNews)
@@ -296,17 +297,18 @@ class Preprocessor():
         return allNews
 
     """
-    12) read All Texts From Database 
+    12) read All Texts From Database
     - FUNÇÃO  : recebe: dir20News: uma string com o caminho até a pasta com os dados do 20NewsGroup,
                                dirBbcFiles: uma string com o caminho até as pastas com as pastas do BBC
-                                
+
                                remove os headers irrelevantes pra análise do texto e
                                remove os emails dentro do texto
                                randomiza a ordem dos textos.
     - RETORNO : retorna uma lista de string com cada um dos textos em uma string
     """
 
-    def readAllTextsFromDatabase(self, dir20News:str ='database/20NewsGroup/' , dirBbcFiles:str = 'database/bbcFiles/') -> List[str]:
+    #def readAllTextsFromDatabase(self, dir20News:str ='database/20NewsGroup/' , dirBbcFiles:str = 'database/bbcFiles/') -> List[str]:
+    def readAllTextsFromDatabase(self, dir20News:str ='../input/' , dirBbcFiles:str = '../input/') -> List[str]:
         allNews = []
         allNews += self.readAll20NewsGroup(dir20News)
         allNews += self.readAllBbc(dirBbcFiles)
@@ -318,11 +320,11 @@ class Preprocessor():
     """
         processTexts
         - FUNÇÃO  : recebe: texts - lista de todos os textos puros (com o conteudo original)
-                                  
+
                                    separa os textos em palavras
                                    remove pontuação , números , stop words
-                                   aplica o stemmer no texto 
-        - RETORNO : retorna uma lista com todos os textos e cada texto separado por palavras. 
+                                   aplica o stemmer no texto
+        - RETORNO : retorna uma lista com todos os textos e cada texto separado por palavras.
                 Ex: [texto0[palavra0,palavra1,palavra2], texto1[palavra0,palavra1]]
         """
 
@@ -347,7 +349,3 @@ class Preprocessor():
         print('todos os textos foram processados')
         print("tamanho total da lista gerada é de " + str(asizeof.asizeof(listaProcessada)/8000000) + " MB")
         return listaProcessada
-
-
-
-
