@@ -10,6 +10,9 @@ import os                                                       # Miscellaneous 
 import re                                                       # Regular Expressions
 import random                                                   # Python Random Library
 from pympler import asizeof
+from sklearn.feature_extraction.text import CountVectorizer
+import scipy as sp
+import numpy as np
 
 """
 -------------------- Preprocessor --------------------
@@ -77,11 +80,12 @@ class Preprocessor():
             if(intervalo >= self.intervaloDeLog):
                 totalTextos += intervalo
                 print(str(totalTextos) + ' textos foram tokenizados. \n')
+                #print(listOfListsOfWords)
                 intervalo = 0
             intervalo += 1
 
-            #listOfListsOfWords.append(word_tokenize(text, language='english'))
-            listOfListsOfWords.append([word_tokenize(phrase) for phrase in sent_tokenize(text.translate(dict.fromkeys(string.punctuation)))])
+            listOfListsOfWords.append(word_tokenize(text, language='english'))
+            #listOfListsOfWords.append([word_tokenize(phrase) for phrase in sent_tokenize(text.translate(dict.fromkeys(string.punctuation)).translate(dict.fromkeys(string.digits)))])
 
             #Word tokenize roda o Treebank tokenize, porem deveriamos considerar que o texto ja teria rodado pelo sent_tokenize
             #listOfListsOfWords.append(word_tokenize(sent_tokenize(text, language='english'), language='english'))
@@ -235,7 +239,7 @@ class Preprocessor():
         news = ''
         breakNewsBlock = False
         listOfFiles = os.listdir(directory)
-        print('Lendo arquvos da pasta: ' + directory)
+        print('Lendo arquivos da pasta: ' + directory)
         for fileName in listOfFiles:
             # Apenas lê arquivos com o sufixo passado como parametro
             if (fileName.endswith(suffix)):
@@ -312,8 +316,8 @@ class Preprocessor():
     def readAllTextsFromDatabase(self, dir20News:str ='../input/' , dirBbcFiles:str = '../input/') -> List[str]:
         allNews = []
         allNews += self.readAll20NewsGroup(dir20News)
-        allNews += self.readAllBbc(dirBbcFiles)
-        random.shuffle(allNews)
+        #allNews += self.readAllBbc(dirBbcFiles)
+        #random.shuffle(allNews)
         print(str(len(allNews)) + ' Documentos encontrados.')
         print("Tamanho total do arquivo da lista em memória: "+ str(asizeof.asizeof(allNews)/8000000) + " MB")
         return allNews
@@ -331,8 +335,9 @@ class Preprocessor():
 
     def processTexts(self, texts: List[str]) -> List[List[str]]:
         #lista de palavras ex: [texto0[palavra0,palavra1,palavra2], texto1[palavra0,palavra1]]
-        print('iniciando processo de tokenização dos textos')
+        print('Iniciando processo de tokenização dos textos!')
         listaPalavras = self.tokenizeTexts(texts)
+
         listaProcessada =[]
         intervalo = 0
         totalTextos = 0

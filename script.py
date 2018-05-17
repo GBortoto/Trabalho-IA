@@ -1,24 +1,4 @@
 # -*- coding: utf-8 -*-
-
-if __name__ == "__main__":
-	preprocessor = Preprocessor()
-	texts = preprocessor.readAllTextsFromDatabase()
-	#texts contêm todos os textos que serão utilizados de forma que cada index do array tem uma notícia. As notícias não estão tratadas , são o texto puro , retirado apenas os e-mails e em ordem aleatória.
-	texts = preprocessor.processTexts(texts)
-
-	"""
-		[X] - Ler todos os textos
-		[X] - Fazer data clean dos dados
-		[] - Roda Bag of Words para transformar lista de textos em vetor bidimensional de frequencia de palavra por texto
-		[] - Criar 3 outputs do Bag of Words
-			[] - Matrix binaria
-			[] - Matrix tf
-			[] - Matrix tf_idf
-		[] - Rodar K-means para cada matrix
-		[] - Rodar SOM para cada matrix
-		[] - Pos-processamento
-	"""
-# -*- coding: utf-8 -*-
 from nltk.tokenize import word_tokenize, sent_tokenize                         # Tokenizer
 from nltk.corpus import stopwords                               # Stop Words
 from nltk.stem.porter import *                                  # Stemmer - Porter
@@ -30,6 +10,9 @@ import os                                                       # Miscellaneous 
 import re                                                       # Regular Expressions
 import random                                                   # Python Random Library
 from pympler import asizeof
+from sklearn.feature_extraction.text import CountVectorizer
+import scipy as sp
+import numpy as np
 
 """
 -------------------- Preprocessor --------------------
@@ -97,11 +80,12 @@ class Preprocessor():
             if(intervalo >= self.intervaloDeLog):
                 totalTextos += intervalo
                 print(str(totalTextos) + ' textos foram tokenizados. \n')
+                #print(listOfListsOfWords)
                 intervalo = 0
             intervalo += 1
 
-            #listOfListsOfWords.append(word_tokenize(text, language='english'))
-            listOfListsOfWords.append([word_tokenize(phrase) for phrase in sent_tokenize(text.translate(dict.fromkeys(string.punctuation)))])
+            listOfListsOfWords.append(word_tokenize(text, language='english'))
+            #listOfListsOfWords.append([word_tokenize(phrase) for phrase in sent_tokenize(text.translate(dict.fromkeys(string.punctuation)).translate(dict.fromkeys(string.digits)))])
 
             #Word tokenize roda o Treebank tokenize, porem deveriamos considerar que o texto ja teria rodado pelo sent_tokenize
             #listOfListsOfWords.append(word_tokenize(sent_tokenize(text, language='english'), language='english'))
@@ -255,7 +239,7 @@ class Preprocessor():
         news = ''
         breakNewsBlock = False
         listOfFiles = os.listdir(directory)
-        print('Lendo arquvos da pasta: ' + directory)
+        print('Lendo arquivos da pasta: ' + directory)
         for fileName in listOfFiles:
             # Apenas lê arquivos com o sufixo passado como parametro
             if (fileName.endswith(suffix)):
@@ -332,8 +316,8 @@ class Preprocessor():
     def readAllTextsFromDatabase(self, dir20News:str ='../input/' , dirBbcFiles:str = '../input/') -> List[str]:
         allNews = []
         allNews += self.readAll20NewsGroup(dir20News)
-        allNews += self.readAllBbc(dirBbcFiles)
-        random.shuffle(allNews)
+        #allNews += self.readAllBbc(dirBbcFiles)
+        #random.shuffle(allNews)
         print(str(len(allNews)) + ' Documentos encontrados.')
         print("Tamanho total do arquivo da lista em memória: "+ str(asizeof.asizeof(allNews)/8000000) + " MB")
         return allNews
@@ -351,8 +335,9 @@ class Preprocessor():
 
     def processTexts(self, texts: List[str]) -> List[List[str]]:
         #lista de palavras ex: [texto0[palavra0,palavra1,palavra2], texto1[palavra0,palavra1]]
-        print('iniciando processo de tokenização dos textos')
+        print('Iniciando processo de tokenização dos textos!')
         listaPalavras = self.tokenizeTexts(texts)
+
         listaProcessada =[]
         intervalo = 0
         totalTextos = 0
@@ -370,3 +355,27 @@ class Preprocessor():
         print('todos os textos foram processados')
         print("tamanho total da lista gerada é de " + str(asizeof.asizeof(listaProcessada)/8000000) + " MB")
         return listaProcessada
+# -*- coding: utf-8 -*-
+
+if __name__ == "__main__":
+	preprocessor = Preprocessor()
+	texts = preprocessor.readAllTextsFromDatabase()
+	#texts contêm todos os textos que serão utilizados de forma que cada index do array tem uma notícia. As notícias não estão tratadas , são o texto puro , retirado apenas os e-mails e em ordem aleatória.
+	texts = preprocessor.processTexts(texts)
+	with open("results0.txt", 'w') as output:
+	    ouput.write(texts[0])
+	with open("results1.txt", 'w') as output:
+	    ouput.write(texts[1])
+
+	"""
+		[X] - Ler todos os textos
+		[X] - Fazer data clean dos dados
+		[] - Roda Bag of Words para transformar lista de textos em vetor bidimensional de frequencia de palavra por texto
+		[] - Criar 3 outputs do Bag of Words
+			[] - Matrix binaria
+			[] - Matrix tf
+			[] - Matrix tf_idf
+		[] - Rodar K-means para cada matrix
+		[] - Rodar SOM para cada matrix
+		[] - Pos-processamento
+	"""

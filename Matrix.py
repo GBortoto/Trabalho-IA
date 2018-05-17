@@ -13,9 +13,6 @@ http://scikit-learn.org/stable/modules/feature_extraction.html
 
 """
 
-from sklearn.feature_extraction.text import CountVectorizer
-import scipy as sp
-import numpy as np
 import processador
 
 class TransformMatrix():
