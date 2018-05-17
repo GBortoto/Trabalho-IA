@@ -5,10 +5,9 @@ if __name__ == "__main__":
 	texts = preprocessor.readAllTextsFromDatabase()
 	#texts contêm todos os textos que serão utilizados de forma que cada index do array tem uma notícia. As notícias não estão tratadas , são o texto puro , retirado apenas os e-mails e em ordem aleatória.
 	texts = preprocessor.processTexts(texts)
-	with open("results0.txt", 'w') as output:
-	    ouput.write(texts[0])
-	with open("results1.txt", 'w') as output:
-	    ouput.write(texts[1])
+	with open("results.txt", 'w') as output:
+		for item in texts[0]:
+			output.write(item)
 
 	"""
 		[X] - Ler todos os textos

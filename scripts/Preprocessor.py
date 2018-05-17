@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
+import string                                                   # Lista de caracteres de pontuação
+import os                                                       # Miscellaneous operating system interfaces
+import re                                                       # Regular Expressions
+import random                                                   # Python Random Library
+import scipy as sp
+import numpy as np
 from nltk.tokenize import word_tokenize, sent_tokenize                         # Tokenizer
 from nltk.corpus import stopwords                               # Stop Words
 from nltk.stem.porter import *                                  # Stemmer - Porter
 from nltk.stem.snowball import SnowballStemmer                  # Stemmer - Snowball
-from typing import List                                         # Anotação de help quando uma função é escrita
-import string                                                   # Lista de caracteres de pontuação
-from sklearn.feature_extraction.text import CountVectorizer     # Bag of Words
-import os                                                       # Miscellaneous operating system interfaces
-import re                                                       # Regular Expressions
-import random                                                   # Python Random Library
-from pympler import asizeof
 from sklearn.feature_extraction.text import CountVectorizer
-import scipy as sp
-import numpy as np
+from sklearn.feature_extraction.text import TfidfTransformer
+from typing import List                                         # Anotação de help quando uma função é escrita
+from pympler import asizeof
 
 """
 -------------------- Preprocessor --------------------
@@ -86,6 +86,14 @@ class Preprocessor():
 
             listOfListsOfWords.append(word_tokenize(text, language='english'))
             #listOfListsOfWords.append([word_tokenize(phrase) for phrase in sent_tokenize(text.translate(dict.fromkeys(string.punctuation)).translate(dict.fromkeys(string.digits)))])
+
+            #To create table
+            #table = str.maketrans('', '', string.punctuation)
+            #Remove pontuação de todo o texto
+            #stripped = [w.translate(table) for w in words]
+
+            #Add everything as lower
+            #words = [word.lower() for word in words]
 
             #Word tokenize roda o Treebank tokenize, porem deveriamos considerar que o texto ja teria rodado pelo sent_tokenize
             #listOfListsOfWords.append(word_tokenize(sent_tokenize(text, language='english'), language='english'))
