@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-import tensorflow as tf
-import numpy as np
-
 
 class SOM(object):
     """
@@ -14,18 +11,10 @@ class SOM(object):
 
     def __init__(self, m, n, dim, n_iterations=100, alpha=None, sigma=None):
         """
-        Initializes all necessary components of the TensorFlow
-        Graph.
-
-        m X n are the dimensions of the SOM. 'n_iterations' should
-        should be an integer denoting the number of iterations undergone
-        while training.
-        'dim' is the dimensionality of the training inputs.
-        'alpha' is a number denoting the initial time(iteration no)-based
-        learning rate. Default value is 0.3
-        'sigma' is the the initial neighbourhood value, denoting
-        the radius of influence of the BMU while training. By default, its
-        taken to be half of max(m, n).
+        m x n -> dimensao do SOM
+        n_interations -> #epocas que será treinado a rede
+        alpha -> taxa de aprendizagem. Default 0.3
+        sigma -> taxa de vizinhança. Define o raio que o BMU afeta. Default max(m, n)
         """
 
         #Assign required variables first
@@ -41,7 +30,7 @@ class SOM(object):
             sigma = float(sigma)
         self._n_iterations = abs(int(n_iterations))
 
-        ##INITIALIZE GRAPH
+        ##INITIALIZE GRAPH - TF Graphs é o confunto de operações que serão realizadas + operadores
         self._graph = tf.Graph()
 
         ##POPULATE GRAPH WITH NECESSARY COMPONENTS
@@ -51,8 +40,7 @@ class SOM(object):
 
             #Randomly initialized weightage vectors for all neurons,
             #stored together as a matrix Variable of size [m*n, dim]
-            self._weightage_vects = tf.Variable(tf.random_normal(
-                [m*n, dim]))
+            self._weightage_vects = tf.Variable(tf.random_normal([m*n, dim]))
 
             #Matrix of size [m*n, 2] for SOM grid locations
             #of neurons
@@ -116,11 +104,11 @@ class SOM(object):
             weightage_delta = tf.mul(
                 learning_rate_multiplier,
                 tf.sub(tf.pack([self._vect_input for i in range(m*n)]),
-                       self._weightage_vects))                                         
+                       self._weightage_vects))
             new_weightages_op = tf.add(self._weightage_vects,
                                        weightage_delta)
             self._training_op = tf.assign(self._weightage_vects,
-                                          new_weightages_op)                                       
+                                          new_weightages_op)
 
             ##INITIALIZE SESSION
             self._sess = tf.Session()

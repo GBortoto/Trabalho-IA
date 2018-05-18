@@ -5,6 +5,7 @@ import re                                                       # Regular Expres
 import random                                                   # Python Random Library
 import scipy as sp
 import numpy as np
+import tensorflow as tf
 from nltk.tokenize import word_tokenize, sent_tokenize                         # Tokenizer
 from nltk.corpus import stopwords                               # Stop Words
 from nltk.stem.porter import *                                  # Stemmer - Porter
