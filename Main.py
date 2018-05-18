@@ -21,3 +21,28 @@ if __name__ == "__main__":
 		[] - Rodar SOM para cada matrix
 		[] - Pos-processamento
 	"""
+
+	""" Teste KMeans
+	n = 10000
+    dimentions = 10
+    NGroups = 5
+    iterations = 200
+
+    data = ListOfPoints(n, dimentions)
+    data.points = [[random()*1000 for j in range(dimentions)] for i in range(n)]
+    kmeans = KMeans(data, NGroups)
+
+    print('Inicializando execução')
+    print(str(n) + ' elementos de dados')
+    print(str(dimentions) + ' dimenções')
+    print(str(NGroups) + ' grupos')
+    print(str(iterations) + ' iterações')
+    print('')
+    print('Iteração\tNúmero de elementos em cada grupo')
+
+    for i in range(iterations):
+        print(str(i+1) + '/' + str(iterations) + '\t\t', end='')
+        kmeans.run()
+
+    input()
+	"""
