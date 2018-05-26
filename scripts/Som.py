@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
+
 class SOM(object):
     """
     2-D Self-Organizing Map with Gaussian Neighbourhood function
     and linearly decreasing learning rate.
     """
 
-    #To check if the SOM has been trained
+    # To check if the SOM has been trained
     _trained = False
 
     def __init__(self, m, n, dim, n_iterations=100, alpha=None, sigma=None):
@@ -17,7 +18,7 @@ class SOM(object):
         sigma -> taxa de vizinhança. Define o raio que o BMU afeta. Default max(m, n)
         """
 
-        #Assign required variables first
+        # Assign required variables first
         self._m = m
         self._n = n
         if alpha is None:

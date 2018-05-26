@@ -1,6 +1,10 @@
 class Kmeans():
 
     def __init__(self, type_of_kmeans, points):
+        """Generate a KMeans model for a specific 'k' and a n-matrix of point.
+
+        It will return a model which represents the k-means cluster function
+        """
         self.type_of_kmeans = type_of_kmeans
         self.points = points
 

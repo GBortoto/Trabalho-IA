@@ -5,10 +5,15 @@ if __name__ == "__main__":
 	texts = preprocessor.readAllTextsFromDatabase()
 	#texts contêm todos os textos que serão utilizados de forma que cada index do array tem uma notícia. As notícias não estão tratadas , são o texto puro , retirado apenas os e-mails e em ordem aleatória.
 	texts = preprocessor.processTexts(texts)
-	with open("results.txt", 'w') as output:
-		for item in texts[0]:
-			output.write(item)
+	textos = []
+	for txt in texts:
+		textos.append(' '.join(txt))
 
+
+	# Devemos remover o vetor de vetores e somente deixar um vetor com várias palavras por indices
+	transformador = TransformMatrix(textos)
+	mtx_binaria = transformador.matrix_binaria()
+	print(mtx_binaria)
 	"""
 		[X] - Ler todos os textos
 		[X] - Fazer data clean dos dados

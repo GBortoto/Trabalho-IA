@@ -53,6 +53,10 @@ class TransformMatrix():
 class Kmeans():
 
     def __init__(self, type_of_kmeans, points):
+        """Generate a KMeans model for a specific 'k' and a n-matrix of point.
+
+        It will return a model which represents the k-means cluster function
+        """
         self.type_of_kmeans = type_of_kmeans
         self.points = points
 
@@ -77,13 +81,14 @@ class Kmeans():
         return np.array([self.points[closest == k].mean(axis=0) for k in range(self.centroids.shape[0])])
 # -*- coding: utf-8 -*-
 
+
 class SOM(object):
     """
     2-D Self-Organizing Map with Gaussian Neighbourhood function
     and linearly decreasing learning rate.
     """
 
-    #To check if the SOM has been trained
+    # To check if the SOM has been trained
     _trained = False
 
     def __init__(self, m, n, dim, n_iterations=100, alpha=None, sigma=None):
@@ -94,7 +99,7 @@ class SOM(object):
         sigma -> taxa de vizinhança. Define o raio que o BMU afeta. Default max(m, n)
         """
 
-        #Assign required variables first
+        # Assign required variables first
         self._m = m
         self._n = n
         if alpha is None:
@@ -465,24 +470,6 @@ class Preprocessor():
         return newListOfWords
 
     """
-    7-aux) Bag of Words (recebe um texto em string) ____________________________
-    - FUNÇÃO  :
-    - RETORNO :
-    """
-    # VARIÁVEL GLOBAL UTILIZADA : vectorizer
-    def bagOfWordsForTextInString(self, text: str):
-        return vectorizer.fit_transform(text).todense()
-
-    """
-    7) Bag of Words ____________________________________________________________
-    - FUNÇÃO  :
-    - RETORNO :
-    """
-    def bagOfWords(self, listOfWords: Ligedit st[str]):
-        text = " ".join(listOfWords)
-        return bagOfWordsForTextInString(text)
-
-    """
     8) Erase Emails
     - FUNÇÃO  : recebe uma lista de strings e apaga todos os emails dentro dela
     - RETORNO : retorna uma lista de string sem e-mails dentro dela
@@ -636,10 +623,14 @@ if __name__ == "__main__":
 	texts = preprocessor.readAllTextsFromDatabase()
 	#texts contêm todos os textos que serão utilizados de forma que cada index do array tem uma notícia. As notícias não estão tratadas , são o texto puro , retirado apenas os e-mails e em ordem aleatória.
 	texts = preprocessor.processTexts(texts)
-	with open("results.txt", 'w') as output:
-		for item in texts[0]:
-			output.write(item)
+	textos = []
+	for txt in texts:
+		textos.append(' '.join(txt))
 
+
+	transformador = TransformMatrix(textos)
+	mtx_binaria = transformador.matrix_binaria()
+	print(mtx_binaria)
 	"""
 		[X] - Ler todos os textos
 		[X] - Fazer data clean dos dados
