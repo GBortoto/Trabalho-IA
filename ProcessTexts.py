@@ -2,6 +2,9 @@
 
 import os
 import string
+import Matrix as mxt
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.feature_extraction.text import CountVectorizer
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from nltk import PorterStemmer, LancasterStemmer
@@ -12,50 +15,49 @@ class ProcessTexts():
 
     def __init__(self):
         """."""
-        self.texts = []  # list of text samples
+        self._texts = []  # list of text samples
         for directory in sorted(os.listdir('./database/bbc_news')):
             for file in sorted(os.listdir('./database/bbc_news/' + directory)):
                 path = './database/bbc_news/' + directory + "/" + file
                 f = open(path, encoding='latin-1')
                 t = f.read()
-                self.texts.append(t)
+                self._texts.append(t)
                 f.close()
-        print(self.texts[0])
+        print(self._texts[0])
         print("----- Tokenizando Textos -----")
         self._processa_text()
 
     def _processa_text(self):
         table = str.maketrans('', '', string.punctuation)
-        tokens = []
-        print("----- Tokenizando Sentencas -----")
-        for text in self.texts:
+        stop_words = set(stopwords.words('english'))
+        self.tokens = []
+        print("----- Tokenizando Sentencas e Palavras -----")
+
+        # Para cada texto
+        for index, text in enumerate(self._texts):
+            # Tokenize por sentenca
             sentences = sent_tokenize(text)
             tokens_of_sentence = []
+            # Para cada sentenca
             for sentence in sentences:
-                stripped = [word.translate(table).lower() for word in word_tokenize(sentence)]
+                # Tokenize por palavras, elimine stop words, pontuação e de lower
+                stripped = [word.translate(table).lower() for word in word_tokenize(sentence) if not word in stop_words]
+                stemmerized = self._stemmer_text(tokens=stripped)
+                tokens_of_sentence = tokens_of_sentence + stemmerized
+            self.tokens.append(tokens_of_sentence)
+        del self._texts
 
-            # stopWords = set(stopwords.words('english'))
-            # wordsFiltered = []
-            # stop_words = set(stopwords.words('english'))
-            # words = [w for w in words if not w in stop_words]
-
-            # Remove punctuation
-            # words = [word for word in tokens if word.isalpha()]
-
-
-            tokens.append(stripped)
-            del self.texts
-            print("----- Tokenizando Palavras -----")
-            print(tokens[0])
-            # self._stemmer_text(self.tokens)
-
-    def _stemmer_text(self, tokens):
-        porter = PorterStemmer()
-        lancaster = LancasterStemmer()
-        return [porter.stem(t) for t in tokens], [lancaster.stem(t) for t in tokens]
+    def _stemmer_text(self, tokens, type='Porter'):
+        if type is 'Porter':
+            porter = PorterStemmer()
+            return [porter.stem(t) for t in tokens]
+        if type is 'Lancaster':
+            lancaster = LancasterStemmer()
+            return [lancaster.stem(t) for t in tokens]
 
 
 if __name__ == '__main__':
     """."""
 
     texto_processor = ProcessTexts()
+    matriz = mtx.TransformMatrix(texto_processor.tokens)
