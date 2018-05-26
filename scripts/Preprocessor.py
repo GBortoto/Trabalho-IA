@@ -213,8 +213,7 @@ class Preprocessor():
     - FUNÇÃO  :
     - RETORNO :
     """
-    def bagOfWords(self, listOfWords: Ligedit
-st[str]):
+    def bagOfWords(self, listOfWords: Ligedit st[str]):
         text = " ".join(listOfWords)
         return bagOfWordsForTextInString(text)
 

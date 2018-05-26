@@ -46,8 +46,7 @@ class TransformMatrix():
 		result = sum(listas)
 		return self.bag_of_words / result
 
-	# Matrix TF_IDF que utiliza inverse document 
+	# Matrix TF_IDF que utiliza inverse document
 	def matrix_tfidf(self):
 		tfidf_vectorize = TfidfTransformer(smooth_idf=False)
 		return tfidf_vectorize.fit_transform(self.bag_of_words).toarray()
-
