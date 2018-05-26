@@ -213,7 +213,8 @@ class Preprocessor():
     - FUNÇÃO  :
     - RETORNO :
     """
-    def bagOfWords(self, listOfWords: List[str]):
+    def bagOfWords(self, listOfWords: Ligedit
+st[str]):
         text = " ".join(listOfWords)
         return bagOfWordsForTextInString(text)
 
@@ -328,7 +329,7 @@ class Preprocessor():
         #allNews += self.readAllBbc(dirBbcFiles)
         #random.shuffle(allNews)
         print(str(len(allNews)) + ' Documentos encontrados.')
-        print("Tamanho total do arquivo da lista em memória: "+ str(asizeof.asizeof(allNews)/8000000) + " MB")
+        print("Tamanho total do arquivo da lista em memória: "+ str(asizeof.asizeof(allNews)/1000000) + " MB")
         return allNews
 
     """
@@ -362,5 +363,5 @@ class Preprocessor():
             texto = self.applyStemmerOnText(texto)
             listaProcessada.append(texto)
         print('todos os textos foram processados')
-        print("tamanho total da lista gerada é de " + str(asizeof.asizeof(listaProcessada)/8000000) + " MB")
+        print("tamanho total da lista gerada é de " + str(asizeof.asizeof(listaProcessada)/1000000) + " MB")
         return listaProcessada
