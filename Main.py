@@ -2,6 +2,7 @@
 import ProcessTexts as preprocessor
 import Matrix as mtx
 import KMeans as kmeans
+import KMeansDefault as kmeans_default
 
 if __name__ == "__main__":
 	# preprocessor = Preprocessor()
@@ -23,9 +24,11 @@ if __name__ == "__main__":
 	print('----- Transformando Tokens em Matriz -----')
 	matrix = mtx.TransformMatrix(preprocessor.tokens)
 	print('----- Resultados do bag of words -----')
-	kmeans = kmeans.KMeans(matrix.get_matrix(type='tf-n'))
+
+	# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
+	# kmeans = kmeans.KMeans(matrix.get_matrix(type='tf-n'))
 	# kmeans.plots()
-	kmeans.roda_kmeans(5)
+	# kmeans.roda_kmeans(5)
 	# kmeans.plots(type='centroids')
 
 
