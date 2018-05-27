@@ -2,12 +2,12 @@
 
 import os
 import string
-import Matrix as mxt
+import TransformMatrix as mxt
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import CountVectorizer
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
-from nltk import PorterStemmer, LancasterStemmer
+from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer
 
 
 class ProcessTexts():
@@ -54,6 +54,9 @@ class ProcessTexts():
         if type is 'Lancaster':
             lancaster = LancasterStemmer()
             return [lancaster.stem(t) for t in tokens]
+        if type is 'Snowball':
+            snowball = SnowballStemmer('english')
+            return [snowball.stem(t) for t in tokens]
 
 
 if __name__ == '__main__':
