@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+import numpy as np
+
 """
 # Dada uma matriz pura, essa classe é responsável por retornar qualquer tipo de matrix customizável
 # corpus[texto0[palavraA, palavraB, palavraC], texto1[palavraX, palavraY, palavraZ]]
@@ -14,6 +19,7 @@ http://scikit-learn.org/stable/modules/feature_extraction.html
 """
 
 class TransformMatrix():
+	"""."""
 	def __init__(self, matrix):
 		# Guarda matrix de lista de palavras por texto
 		self.matrix = matrix
@@ -23,6 +29,7 @@ class TransformMatrix():
 
 	def _matrix_creation(self):
 		# Iremos criar uma "vetorizacao" baseado em frequencia (count)
+		# vectorizer = CountVectorizer(max_df=0.9, min_df=0.05)
 		vectorizer = CountVectorizer()
 
 		#Retorna array TF de cada palavra
@@ -31,22 +38,28 @@ class TransformMatrix():
 		# Retorna array com as palavras (labels)
 		self.feature_names = vectorizer.get_feature_names()
 
-	# Matrix binaria será sempre a matrix TF para os casos em que a frequencia é diferente de 0
-	def matrix_binaria(self):
+		# del self.matrix
+
+	def get_matrix(self, type='tf-n'):
+		# Matrix binaria será sempre a matrix TF para os casos em que a frequencia é diferente de 0
 		# Método sign identifica se numero != 0
-		return (sp.sign(self.bag_of_words))
-
-	# Matrix TF somente com frequencia da palavra, independente da frequencia relativa do corpus
-	def matrix_tf(self):
-		return self.bag_of_words
-
-	# Matrix TF normalizada com frequencia indo de [0, 1)
-	def matrix_tf_normalizada(self):
-		listas = [np.sum(lista, axis=0) for lista in self.bag_of_words]
-		result = sum(listas)
-		return self.bag_of_words / result
-
-	# Matrix TF_IDF que utiliza inverse document
-	def matrix_tfidf(self):
-		tfidf_vectorize = TfidfTransformer(smooth_idf=False)
-		return tfidf_vectorize.fit_transform(self.bag_of_words).toarray()
+		# print(type)
+		# print(type == 'tf-n')
+		if type is 'binary':
+			print('----- Processando Matriz Binaria -----')
+			return (sp.sign(self.bag_of_words))
+		# Matrix TF somente com frequencia da palavra, independente da frequencia relativa do corpus
+		if type == 'tf':
+			print('----- Processando Matriz TF -----')
+			return self.bag_of_words
+		# Matrix TF normalizada com frequencia indo de [0, 1)
+		if type == 'tf-n':
+			print('----- Processando Matriz TF-Normalizada -----')
+			listas = [np.sum(lista, axis=0) for lista in self.bag_of_words]
+			result = sum(listas)
+			return self.bag_of_words / result
+		# Matrix TF_IDF que utiliza inverse document
+		if type == 'tf-idf':
+			print('----- Processando Matriz TF-IDF -----')
+			tfidf_vectorize = TfidfTransformer(smooth_idf=False)
+			return tfidf_vectorize.fit_transform(self.bag_of_words).toarray()

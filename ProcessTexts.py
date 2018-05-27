@@ -2,12 +2,10 @@
 
 import os
 import string
-import TransformMatrix as mxt
-from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn.feature_extraction.text import CountVectorizer
+
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
-from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer
+from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
 
 
 class ProcessTexts():
@@ -23,15 +21,14 @@ class ProcessTexts():
                 t = f.read()
                 self._texts.append(t)
                 f.close()
-        print(self._texts[0])
-        print("----- Tokenizando Textos -----")
+
         self._processa_text()
 
-    def _processa_text(self):
+    def _processa_text(self, type='Porter'):
+        print("----- Tokenizando Sentencas e Palavras -----")
         table = str.maketrans('', '', string.punctuation)
         stop_words = set(stopwords.words('english'))
         self.tokens = []
-        print("----- Tokenizando Sentencas e Palavras -----")
 
         # Para cada texto
         for index, text in enumerate(self._texts):
@@ -42,12 +39,13 @@ class ProcessTexts():
             for sentence in sentences:
                 # Tokenize por palavras, elimine stop words, pontuação e de lower
                 stripped = [word.translate(table).lower() for word in word_tokenize(sentence) if not word in stop_words]
-                stemmerized = self._stemmer_text(tokens=stripped)
+                stemmerized = self._normalize_text(tokens=stripped, type=type)
                 tokens_of_sentence = tokens_of_sentence + stemmerized
             self.tokens.append(tokens_of_sentence)
         del self._texts
+        self._join_words()
 
-    def _stemmer_text(self, tokens, type='Porter'):
+    def _normalize_text(self, tokens, type):
         if type is 'Porter':
             porter = PorterStemmer()
             return [porter.stem(t) for t in tokens]
@@ -57,10 +55,13 @@ class ProcessTexts():
         if type is 'Snowball':
             snowball = SnowballStemmer('english')
             return [snowball.stem(t) for t in tokens]
+        if type is 'Lemma':
+            lemma = WordNetLemmatizer()
+            return [lemma.lemmatize(t) for t in tokens]
 
-
-if __name__ == '__main__':
-    """."""
-
-    texto_processor = ProcessTexts()
-    matriz = mtx.TransformMatrix(texto_processor.tokens)
+    def _join_words(self):
+        new_tokens = []
+        for token in self.tokens:
+            # new_tokens.append((' '.join(token)).replace('  ', ' '))
+            new_tokens.append(' '.join(token))
+        self.tokens = new_tokens
