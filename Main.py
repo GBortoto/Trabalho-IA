@@ -12,7 +12,7 @@ import string
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans as KMeansDefault
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from nltk.tokenize import word_tokenize, sent_tokenize
