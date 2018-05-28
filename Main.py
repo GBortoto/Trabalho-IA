@@ -1,35 +1,50 @@
 # -*- coding: utf-8 -*-
-import ProcessTexts as preprocessor
-import Matrix as mtx
-import KMeans as kmeans
-import KMeansDefault as kmeans_default
+
+# Ativar qd rodar localmente
+# import ProcessTexts as preprocessor
+# import Matrix as mtx
+# import KMeans as kmeans
+# import KMeansDefault as kmeans_default
+
+import numpy as np
+import os
+import string
+import tensorflow as tf
+import matplotlib.pyplot as plt
+
+from sklearn.cluster import KMeans
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.corpus import stopwords
+from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
+
 
 if __name__ == "__main__":
-	# preprocessor = Preprocessor()
-	# texts = preprocessor.readAllTextsFromDatabase()
-	# #texts contêm todos os textos que serão utilizados de forma que cada index do array tem uma notícia. As notícias não estão tratadas , são o texto puro , retirado apenas os e-mails e em ordem aleatória.
-	# texts = preprocessor.processTexts(texts)
-	# textos = []
-	# for txt in texts:
-	# 	textos.append(' '.join(txt))
-	# texts = [item for sublist in textos for item in sublist]
-	#
-	#
-	# # Devemos remover o vetor de vetores e somente deixar um vetor com várias palavras por indices
-	# transformador = TransformMatrix(texts)
-	# mtx_binaria = transformador.matrix_binaria()
-	# print(mtx_binaria)
+	env = 'kaggle'
 
-	preprocessor = preprocessor.ProcessTexts()
-	print('----- Transformando Tokens em Matriz -----')
-	matrix = mtx.TransformMatrix(preprocessor.tokens)
-	print('----- Resultados do bag of words -----')
+	if env == 'kaggle':
+		preprocessor = ProcessTexts()
+		print('----- Transformando Tokens em Matriz -----')
+		matrix = TransformMatrix(preprocessor.tokens)
+		print('----- Resultados do bag of words -----')
 
-	# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
-	# kmeans = kmeans.KMeans(matrix.get_matrix(type='tf-n'))
-	# kmeans.plots()
-	# kmeans.roda_kmeans(5)
-	# kmeans.plots(type='centroids')
+		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
+		kmeans = KMeans(matrix.get_matrix(type='tf-n'))
+		# kmeans.plots()
+		kmeans.roda_kmeans(5)
+		kmeans.plots(type='movement')
+	else:
+		preprocessor = preprocessor.ProcessTexts()
+		print('----- Transformando Tokens em Matriz -----')
+		matrix = mtx.TransformMatrix(preprocessor.tokens)
+		print('----- Resultados do bag of words -----')
+
+		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
+		kmeans = kmeans.KMeans(matrix.get_matrix(type='tf-n'))
+		# kmeans.plots()
+		kmeans.roda_kmeans(5)
+		kmeans.plots(type='movement')
 
 
 	"""

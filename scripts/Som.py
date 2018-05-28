@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+# import tensforflow as tf
 
 class SOM(object):
     """

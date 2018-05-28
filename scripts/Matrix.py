@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfTransformer
-import numpy as np
+# from sklearn.feature_extraction.text import CountVectorizer
+# from sklearn.feature_extraction.text import TfidfTransformer
+# import numpy as np
 
 """
 # Dada uma matriz pura, essa classe é responsável por retornar qualquer tipo de matrix customizável

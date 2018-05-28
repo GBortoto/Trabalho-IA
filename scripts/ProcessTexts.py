@@ -1,11 +1,11 @@
 """Class to process all texts."""
 
-import os
-import string
-
-from nltk.tokenize import word_tokenize, sent_tokenize
-from nltk.corpus import stopwords
-from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
+# import os
+# import string
+#
+# from nltk.tokenize import word_tokenize, sent_tokenize
+# from nltk.corpus import stopwords
+# from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
 
 
 class ProcessTexts():
@@ -13,18 +13,30 @@ class ProcessTexts():
 
     def __init__(self):
         """."""
+        self._read_text(texts=['bbc_kaggle'])
+        self._process_text()
+
+    def _read_text(self, texts):
         self._texts = []  # list of text samples
-        for directory in sorted(os.listdir('./database/bbc_news')):
-            for file in sorted(os.listdir('./database/bbc_news/' + directory)):
-                path = './database/bbc_news/' + directory + "/" + file
-                f = open(path, encoding='latin-1')
-                t = f.read()
-                self._texts.append(t)
-                f.close()
 
-        self._processa_text()
+        if 'bbc_local' in texts:
+            for directory in sorted(os.listdir('./database/bbc_news')):
+                for file in sorted(os.listdir('./database/bbc_news/' + directory)):
+                    path = './database/bbc_news/' + directory + "/" + file
+                    f = open(path, encoding='latin-1')
+                    t = f.read()
+                    self._texts.append(t)
+                    f.close()
+        if 'bbc_kaggle' in texts:
+            for directory_type in sorted(os.listdir('../input/bbc news summary/BBC News Summary/')):
+                for directory in sorted(os.listdir('../input/bbc news summary/BBC News Summary/' + directory_type)):
+                    for file in sorted(os.listdir('../input/bbc news summary/BBC News Summary/' + directory_type + "/" + directory)):
+                        f = open('../input/bbc news summary/BBC News Summary/' + directory_type + "/" + directory + "/" + file, encoding='latin-1')
+                        t = f.read()
+                        self._texts.append(t)
+                        f.close()
 
-    def _processa_text(self, type='Porter'):
+    def _process_text(self, type='Porter'):
         print("----- Tokenizando Sentencas e Palavras -----")
         table = str.maketrans('', '', string.punctuation)
         stop_words = set(stopwords.words('english'))

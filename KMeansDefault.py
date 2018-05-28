@@ -1,7 +1,7 @@
 """Default retirado de: http://stackabuse.com/k-means-clustering-with-scikit-learn/ ."""
 
-import matplotlib.pyplot as plt
-from sklearn.cluster import KMeans
+# import matplotlib.pyplot as plt
+# from sklearn.cluster import KMeans
 
 
 class KMeansDefault():

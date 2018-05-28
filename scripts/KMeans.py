@@ -1,7 +1,7 @@
 """https://flothesof.github.io/k-means-numpy.html ."""
 
-import numpy as np
-import matplotlib.pyplot as plt
+# import numpy as np
+# import matplotlib.pyplot as plt
 
 
 class KMeans():

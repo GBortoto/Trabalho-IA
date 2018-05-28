@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+
+# from sklearn.feature_extraction.text import CountVectorizer
+# from sklearn.feature_extraction.text import TfidfTransformer
+# import numpy as np
+
 """
 # Dada uma matriz pura, essa classe é responsável por retornar qualquer tipo de matrix customizável
 # corpus[texto0[palavraA, palavraB, palavraC], texto1[palavraX, palavraY, palavraZ]]
@@ -14,6 +19,7 @@ http://scikit-learn.org/stable/modules/feature_extraction.html
 """
 
 class TransformMatrix():
+	"""."""
 	def __init__(self, matrix):
 		# Guarda matrix de lista de palavras por texto
 		self.matrix = matrix
@@ -23,6 +29,7 @@ class TransformMatrix():
 
 	def _matrix_creation(self):
 		# Iremos criar uma "vetorizacao" baseado em frequencia (count)
+		# vectorizer = CountVectorizer(max_df=0.9, min_df=0.05)
 		vectorizer = CountVectorizer()
 
 		#Retorna array TF de cada palavra
@@ -31,72 +38,120 @@ class TransformMatrix():
 		# Retorna array com as palavras (labels)
 		self.feature_names = vectorizer.get_feature_names()
 
-	# Matrix binaria será sempre a matrix TF para os casos em que a frequencia é diferente de 0
-	def matrix_binaria(self):
+		# del self.matrix
+
+	def get_matrix(self, type='tf-n'):
+		# Matrix binaria será sempre a matrix TF para os casos em que a frequencia é diferente de 0
 		# Método sign identifica se numero != 0
-		return (sp.sign(self.bag_of_words))
+		# print(type)
+		# print(type == 'tf-n')
+		if type is 'binary':
+			print('----- Processando Matriz Binaria -----')
+			return (sp.sign(self.bag_of_words))
+		# Matrix TF somente com frequencia da palavra, independente da frequencia relativa do corpus
+		if type == 'tf':
+			print('----- Processando Matriz TF -----')
+			return self.bag_of_words
+		# Matrix TF normalizada com frequencia indo de [0, 1)
+		if type == 'tf-n':
+			print('----- Processando Matriz TF-Normalizada -----')
+			listas = [np.sum(lista, axis=0) for lista in self.bag_of_words]
+			result = sum(listas)
+			return self.bag_of_words / result
+		# Matrix TF_IDF que utiliza inverse document
+		if type == 'tf-idf':
+			print('----- Processando Matriz TF-IDF -----')
+			tfidf_vectorize = TfidfTransformer(smooth_idf=False)
+			return tfidf_vectorize.fit_transform(self.bag_of_words).toarray()
+"""Class to process all texts."""
 
-	# Matrix TF somente com frequencia da palavra, independente da frequencia relativa do corpus
-	def matrix_tf(self):
-		return self.bag_of_words
-
-	# Matrix TF normalizada com frequencia indo de [0, 1)
-	def matrix_tf_normalizada(self):
-		listas = [np.sum(lista, axis=0) for lista in self.bag_of_words]
-		result = sum(listas)
-		return self.bag_of_words / result
-
-	# Matrix TF_IDF que utiliza inverse document
-	def matrix_tfidf(self):
-		tfidf_vectorize = TfidfTransformer(smooth_idf=False)
-		return tfidf_vectorize.fit_transform(self.bag_of_words).toarray()
-"""Module to process texts."""
-
-import string                                                   # Lista de caracteres de pontuação
-import os                                                       # Miscellaneous operating system interfaces
-import re                                                       # Regular Expressions
-import random                                                   # Python Random Library
-import scipy as sp
-import numpy as np
-import tensorflow as tf
-from nltk.tokenize import word_tokenize, sent_tokenize                         # Tokenizer
-from nltk.corpus import stopwords                               # Stop Words
-from nltk.stem.porter import *                                  # Stemmer - Porter
-from nltk.stem.snowball import SnowballStemmer                  # Stemmer - Snowball
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfTransformer
-from typing import List                                         # Anotação de help quando uma função é escrita
-from pympler import asizeof
+# import os
+# import string
+#
+# from nltk.tokenize import word_tokenize, sent_tokenize
+# from nltk.corpus import stopwords
+# from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
 
 
-class ProcessaTextos():
-    """Class that process multiple datasets to provide a input for KMeans and SOM."""
+class ProcessTexts():
+    """."""
 
     def __init__(self):
-        """Read texts and read them."""
-        texts = []  # list of text samples
-        labels_index = {}  # dictionary mapping label name to numeric id
-        labels = []  # list of label ids
-        for name in sorted(os.listdir('../input/')):
-            path = os.path.join('../input/', name)
-            label_id = len(labels_index)
-            labels_index[name] = label_id
-            f = open(path, encoding='latin-1')
-            t = f.read()
-            i = t.find('\n\n')  # skip header
-            if 0 < i:
-                t = t[i:]
-            texts.append(t)
-            f.close()
-            labels.append(label_id)
+        """."""
+        self._read_text(texts=['bbc_kaggle'])
+        self._process_text()
 
-        print('Found %s texts.' % len(texts))
-        tokens = []
-        for text in texts:
-            tokens.append(word_tokenize(text))
-class Kmeans():
+    def _read_text(self, texts):
+        self._texts = []  # list of text samples
 
-    def __init__(self, type_of_kmeans, points):
+        if 'bbc_local' in texts:
+            for directory in sorted(os.listdir('./database/bbc_news')):
+                for file in sorted(os.listdir('./database/bbc_news/' + directory)):
+                    path = './database/bbc_news/' + directory + "/" + file
+                    f = open(path, encoding='latin-1')
+                    t = f.read()
+                    self._texts.append(t)
+                    f.close()
+        if 'bbc_kaggle' in texts:
+            for directory_type in sorted(os.listdir('../input/bbc news summary/BBC News Summary/')):
+                for directory in sorted(os.listdir('../input/bbc news summary/BBC News Summary/' + directory_type)):
+                    for file in sorted(os.listdir('../input/bbc news summary/BBC News Summary/' + directory_type + "/" + directory)):
+                        f = open('../input/bbc news summary/BBC News Summary/' + directory_type + "/" + directory + "/" + file, encoding='latin-1')
+                        t = f.read()
+                        self._texts.append(t)
+                        f.close()
+
+    def _process_text(self, type='Porter'):
+        print("----- Tokenizando Sentencas e Palavras -----")
+        table = str.maketrans('', '', string.punctuation)
+        stop_words = set(stopwords.words('english'))
+        self.tokens = []
+
+        # Para cada texto
+        for index, text in enumerate(self._texts):
+            # Tokenize por sentenca
+            sentences = sent_tokenize(text)
+            tokens_of_sentence = []
+            # Para cada sentenca
+            for sentence in sentences:
+                # Tokenize por palavras, elimine stop words, pontuação e de lower
+                stripped = [word.translate(table).lower() for word in word_tokenize(sentence) if not word in stop_words]
+                stemmerized = self._normalize_text(tokens=stripped, type=type)
+                tokens_of_sentence = tokens_of_sentence + stemmerized
+            self.tokens.append(tokens_of_sentence)
+        del self._texts
+        self._join_words()
+
+    def _normalize_text(self, tokens, type):
+        if type is 'Porter':
+            porter = PorterStemmer()
+            return [porter.stem(t) for t in tokens]
+        if type is 'Lancaster':
+            lancaster = LancasterStemmer()
+            return [lancaster.stem(t) for t in tokens]
+        if type is 'Snowball':
+            snowball = SnowballStemmer('english')
+            return [snowball.stem(t) for t in tokens]
+        if type is 'Lemma':
+            lemma = WordNetLemmatizer()
+            return [lemma.lemmatize(t) for t in tokens]
+
+    def _join_words(self):
+        new_tokens = []
+        for token in self.tokens:
+            # new_tokens.append((' '.join(token)).replace('  ', ' '))
+            new_tokens.append(' '.join(token))
+        self.tokens = new_tokens
+"""https://flothesof.github.io/k-means-numpy.html ."""
+
+# import numpy as np
+# import matplotlib.pyplot as plt
+
+
+class KMeans():
+    """."""
+
+    def __init__(self, points, type_of_kmeans='default'):
         """Generate a KMeans model for a specific 'k' and a n-matrix of point.
 
         It will return a model which represents the k-means cluster function
@@ -104,27 +159,52 @@ class Kmeans():
         self.type_of_kmeans = type_of_kmeans
         self.points = points
 
-    def see_points(self):
-        # plt.scatter(points[:,0], points[:,1])
-        ax = plt.gca()
+    def plots(self, type='points'):
+        """."""
+        if type == 'points':
+            plt.scatter(self.points[:, 0], self.points[:, 1])
+            ax = plt.gca()
+            ax.add_artist(plt.Circle(np.array([1, 0]), 0.75/2, fill=False, lw=3))
+            ax.add_artist(plt.Circle(np.array([-0.5, 0.5]), 0.25/2, fill=False, lw=3))
+            ax.add_artist(plt.Circle(np.array([-0.5, -0.5]), 0.5/2, fill=False, lw=3))
+            plt.show()
+
+        if type == 'centroids':
+            plt.scatter(self.centroids[:, 0], self.centroids[:, 1], c='r', s=100)
+            plt.show()
+
+        if type == 'movement':
+            plt.subplot(121)
+            plt.scatter(self.points[:, 0], self.points[:, 1])
+            plt.scatter(self.centroids[:, 0], self.centroids[:, 1], c='r', s=100)
+
+            plt.subplot(122)
+            plt.scatter(self.points[:, 0], self.points[:, 1])
+            plt.scatter(self.centroids[:, 0], self.centroids[:, 1], c='r', s=100)
+            plt.show()
 
     def inicia_centroides(self, k_centroids):
+        """."""
         centroids = self.points.copy()
         np.random.shuffle(centroids)
         self.centroids = centroids[:k_centroids]
 
     def busca_centroides_mais_proximo(self):
+        """."""
         distancias = np.sqrt(((self.points - self.centroids[:, np.newaxis]) ** 2).sum(axis=2))
         return np.argmin(distancias, axis=0)
 
-    def roda_kmeans(self):
-        self.inicia_centroides(4)
-        self.movimenta_centroides(self.busca_centroid_mais_proximo())
+    def roda_kmeans(self, k_centroids):
+        """."""
+        self.inicia_centroides(k_centroids)
+        self.movimenta_centroides(self.busca_centroides_mais_proximo())
 
     def movimenta_centroides(self, closest):
+        """."""
         return np.array([self.points[closest == k].mean(axis=0) for k in range(self.centroids.shape[0])])
 # -*- coding: utf-8 -*-
 
+# import tensforflow as tf
 
 class SOM(object):
     """
@@ -314,59 +394,63 @@ class SOM(object):
         return to_return
 # -*- coding: utf-8 -*-
 
-if __name__ == "__main__":
-	# preprocessor = Preprocessor()
-	# texts = preprocessor.readAllTextsFromDatabase()
-	# #texts contêm todos os textos que serão utilizados de forma que cada index do array tem uma notícia. As notícias não estão tratadas , são o texto puro , retirado apenas os e-mails e em ordem aleatória.
-	# texts = preprocessor.processTexts(texts)
-	# textos = []
-	# for txt in texts:
-	# 	textos.append(' '.join(txt))
-	# texts = [item for sublist in textos for item in sublist]
-	#
-	#
-	# # Devemos remover o vetor de vetores e somente deixar um vetor com várias palavras por indices
-	# transformador = TransformMatrix(texts)
-	# mtx_binaria = transformador.matrix_binaria()
-	# print(mtx_binaria)
+# Ativar qd rodar localmente
+# import ProcessTexts as preprocessor
+# import Matrix as mtx
+# import KMeans as kmeans
+# import KMeansDefault as kmeans_default
 
-	preprocessor = ProcessaTextos()
+import numpy as np
+import os
+import string
+import tensorflow as tf
+import matplotlib.pyplot as plt
+
+from sklearn.cluster import KMeans
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.corpus import stopwords
+from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
+
+
+if __name__ == "__main__":
+	env = 'kaggle'
+
+	if env == 'kaggle':
+		preprocessor = ProcessTexts()
+		print('----- Transformando Tokens em Matriz -----')
+		matrix = TransformMatrix(preprocessor.tokens)
+		print('----- Resultados do bag of words -----')
+
+		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
+		kmeans = KMeans(matrix.get_matrix(type='tf-n'))
+		# kmeans.plots()
+		kmeans.roda_kmeans(5)
+		kmeans.plots(type='movement')
+	else:
+		preprocessor = preprocessor.ProcessTexts()
+		print('----- Transformando Tokens em Matriz -----')
+		matrix = mtx.TransformMatrix(preprocessor.tokens)
+		print('----- Resultados do bag of words -----')
+
+		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
+		kmeans = kmeans.KMeans(matrix.get_matrix(type='tf-n'))
+		# kmeans.plots()
+		kmeans.roda_kmeans(5)
+		kmeans.plots(type='movement')
 
 
 	"""
 		[X] - Ler todos os textos
 		[X] - Fazer data clean dos dados
-		[] - Roda Bag of Words para transformar lista de textos em vetor bidimensional de frequencia de palavra por texto
-		[] - Criar 3 outputs do Bag of Words
-			[] - Matrix binaria
-			[] - Matrix tf
-			[] - Matrix tf_idf
+		[X] - Roda Bag of Words para transformar lista de textos em vetor bidimensional de frequencia de palavra por texto
+		[X] - Criar 3 outputs do Bag of Words
+			[X] - Matrix binaria
+			[X] - Matrix tf
+			[X] - Matrix tf_idf
+			[] - Ngrams
 		[] - Rodar K-means para cada matrix
 		[] - Rodar SOM para cada matrix
 		[] - Pos-processamento
-	"""
-
-	""" Teste KMeans
-	n = 10000
-    dimentions = 10
-    NGroups = 5
-    iterations = 200
-
-    data = ListOfPoints(n, dimentions)
-    data.points = [[random()*1000 for j in range(dimentions)] for i in range(n)]
-    kmeans = KMeans(data, NGroups)
-
-    print('Inicializando execução')
-    print(str(n) + ' elementos de dados')
-    print(str(dimentions) + ' dimenções')
-    print(str(NGroups) + ' grupos')
-    print(str(iterations) + ' iterações')
-    print('')
-    print('Iteração\tNúmero de elementos em cada grupo')
-
-    for i in range(iterations):
-        print(str(i+1) + '/' + str(iterations) + '\t\t', end='')
-        kmeans.run()
-
-    input()
 	"""
