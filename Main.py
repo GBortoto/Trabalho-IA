@@ -28,12 +28,16 @@ if __name__ == "__main__":
 		print('----- Transformando Tokens em Matriz -----')
 		matrix = TransformMatrix(preprocessor.tokens)
 		print('----- Resultados do bag of words -----')
-
+		dados = matrix.get_matrix(type='tf-n')
 		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
-		kmeans = KMeans(matrix.get_matrix(type='tf-n'))
+		kmeans = KMeans(dados)
 		# kmeans.plots()
 		kmeans.roda_kmeans(5)
 		kmeans.plots(type='movement')
+
+		som = SOM(5,5,33752)
+		som.train(dados)
+
 	else:
 		preprocessor = preprocessor.ProcessTexts()
 		print('----- Transformando Tokens em Matriz -----')

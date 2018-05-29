@@ -1,22 +1,9 @@
+"""."""
 # -*- coding: utf-8 -*-
 
 # from sklearn.feature_extraction.text import CountVectorizer
 # from sklearn.feature_extraction.text import TfidfTransformer
 # import numpy as np
-
-"""
-# Dada uma matriz pura, essa classe é responsável por retornar qualquer tipo de matrix customizável
-# corpus[texto0[palavraA, palavraB, palavraC], texto1[palavraX, palavraY, palavraZ]]
-# Matrix pura: corpus[n_textos][m_palavras_fixas]
-# a = [["A","B","C"],["X","Y","Z"],["L","M","N"]]
-# x = [["John likes to watch movies. Mary likes movies too.",
-"John also likes to watch football games."],["X","Y","Z"],["L","M","N"]]
-# y = ["¿Plata o plomo?  La cárcel em Estados Unidos es peor que la muerte. Bueno ... en mi opinión, una cárcel en Estados Unidos es peor que la muerte. ", "Ma tem ou não tem o celular do milhãouamm? Ma! Ao adquirir o carnê do Baú, você estará concorrendo a um prêmio de cem mil reaisam. Ma quem quer dinheiroam? Ma não existem mulher feiam, existem mulher que não conhece os produtos Jequitiamm. Qual é a musicamm? Vem pra lá, mah você vai pra cá. Agora vai, agora vem pra láamm. Patríciaaammmm... Luiz Ricardouaaammmmmm. Ma vejam só, vejam só. Ma! Ao adquirir o carnê do Baú, você estará concorrendo a um prêmio de cem mil reaisam. Ma não existem mulher feiam, existem mulher que não conhece os produtos Jequitiamm. Estamos em ritmo de festamm."]
-
-Fonte:
-http://scikit-learn.org/stable/modules/feature_extraction.html
-
-"""
 
 class TransformMatrix():
 	"""."""
@@ -159,7 +146,7 @@ class KMeans():
         self.type_of_kmeans = type_of_kmeans
         self.points = points
 
-    def plots(self, type='points'):
+    def plots(self, type='points', save=True):
         """."""
         if type == 'points':
             plt.scatter(self.points[:, 0], self.points[:, 1])
@@ -167,11 +154,9 @@ class KMeans():
             ax.add_artist(plt.Circle(np.array([1, 0]), 0.75/2, fill=False, lw=3))
             ax.add_artist(plt.Circle(np.array([-0.5, 0.5]), 0.25/2, fill=False, lw=3))
             ax.add_artist(plt.Circle(np.array([-0.5, -0.5]), 0.5/2, fill=False, lw=3))
-            plt.show()
 
         if type == 'centroids':
             plt.scatter(self.centroids[:, 0], self.centroids[:, 1], c='r', s=100)
-            plt.show()
 
         if type == 'movement':
             plt.subplot(121)
@@ -181,7 +166,12 @@ class KMeans():
             plt.subplot(122)
             plt.scatter(self.points[:, 0], self.points[:, 1])
             plt.scatter(self.centroids[:, 0], self.centroids[:, 1], c='r', s=100)
+
+        if save is False:
             plt.show()
+        else:
+            print('Salvando resultados...')
+            plt.savefig('result_' + type + '.png')
 
     def inicia_centroides(self, k_centroids):
         """."""
@@ -272,7 +262,7 @@ class SOM(object):
             #neuron's weightage vector and the input, and returns the
             #index of the neuron which gives the least value
             bmu_index = tf.argmin(tf.sqrt(tf.reduce_sum(
-                tf.pow(tf.sub(self._weightage_vects, tf.pack(
+                tf.pow(tf.subtract(self._weightage_vects, tf.stack(
                     [self._vect_input for i in range(m*n)])), 2), 1)),
                                   0)
 
@@ -286,30 +276,30 @@ class SOM(object):
 
             #To compute the alpha and sigma values based on iteration
             #number
-            learning_rate_op = tf.sub(1.0, tf.div(self._iter_input,
+            learning_rate_op = tf.subtract(1.0, tf.divide(self._iter_input,
                                                   self._n_iterations))
-            _alpha_op = tf.mul(alpha, learning_rate_op)
-            _sigma_op = tf.mul(sigma, learning_rate_op)
+            _alpha_op = tf.multiply(alpha, learning_rate_op)
+            _sigma_op = tf.multiply(sigma, learning_rate_op)
 
             #Construct the op that will generate a vector with learning
             #rates for all neurons, based on iteration number and location
             #wrt BMU.
-            bmu_distance_squares = tf.reduce_sum(tf.pow(tf.sub(
-                self._location_vects, tf.pack(
+            bmu_distance_squares = tf.reduce_sum(tf.pow(tf.subtract(
+                self._location_vects, tf.stack(
                     [bmu_loc for i in range(m*n)])), 2), 1)
-            neighbourhood_func = tf.exp(tf.neg(tf.div(tf.cast(
+            neighbourhood_func = tf.exp(tf.negative(tf.divide(tf.cast(
                 bmu_distance_squares, "float32"), tf.pow(_sigma_op, 2))))
-            learning_rate_op = tf.mul(_alpha_op, neighbourhood_func)
+            learning_rate_op = tf.multiply(_alpha_op, neighbourhood_func)
 
             #Finally, the op that will use learning_rate_op to update
             #the weightage vectors of all neurons based on a particular
             #input
-            learning_rate_multiplier = tf.pack([tf.tile(tf.slice(
+            learning_rate_multiplier = tf.stack([tf.tile(tf.slice(
                 learning_rate_op, np.array([i]), np.array([1])), [dim])
                                                for i in range(m*n)])
-            weightage_delta = tf.mul(
+            weightage_delta = tf.multiply(
                 learning_rate_multiplier,
-                tf.sub(tf.pack([self._vect_input for i in range(m*n)]),
+                tf.subtract(tf.stack([self._vect_input for i in range(m*n)]),
                        self._weightage_vects))
             new_weightages_op = tf.add(self._weightage_vects,
                                        weightage_delta)
@@ -406,7 +396,7 @@ import string
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans as KMeansDefault
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from nltk.tokenize import word_tokenize, sent_tokenize
@@ -422,12 +412,16 @@ if __name__ == "__main__":
 		print('----- Transformando Tokens em Matriz -----')
 		matrix = TransformMatrix(preprocessor.tokens)
 		print('----- Resultados do bag of words -----')
-
+		dados = matrix.get_matrix(type='tf-n')
 		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
-		kmeans = KMeans(matrix.get_matrix(type='tf-n'))
+		kmeans = KMeans(dados)
 		# kmeans.plots()
 		kmeans.roda_kmeans(5)
 		kmeans.plots(type='movement')
+
+		som = SOM(5,5,33752)
+		som.train(dados)
+
 	else:
 		preprocessor = preprocessor.ProcessTexts()
 		print('----- Transformando Tokens em Matriz -----')

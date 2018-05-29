@@ -15,7 +15,7 @@ class KMeans():
         self.type_of_kmeans = type_of_kmeans
         self.points = points
 
-    def plots(self, type='points'):
+    def plots(self, type='points', save=True):
         """."""
         if type == 'points':
             plt.scatter(self.points[:, 0], self.points[:, 1])
@@ -23,11 +23,9 @@ class KMeans():
             ax.add_artist(plt.Circle(np.array([1, 0]), 0.75/2, fill=False, lw=3))
             ax.add_artist(plt.Circle(np.array([-0.5, 0.5]), 0.25/2, fill=False, lw=3))
             ax.add_artist(plt.Circle(np.array([-0.5, -0.5]), 0.5/2, fill=False, lw=3))
-            plt.show()
 
         if type == 'centroids':
             plt.scatter(self.centroids[:, 0], self.centroids[:, 1], c='r', s=100)
-            plt.show()
 
         if type == 'movement':
             plt.subplot(121)
@@ -37,7 +35,12 @@ class KMeans():
             plt.subplot(122)
             plt.scatter(self.points[:, 0], self.points[:, 1])
             plt.scatter(self.centroids[:, 0], self.centroids[:, 1], c='r', s=100)
+
+        if save is False:
             plt.show()
+        else:
+            print('Salvando resultados...')
+            plt.savefig('result_' + type + '.png')
 
     def inicia_centroides(self, k_centroids):
         """."""
