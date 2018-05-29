@@ -116,7 +116,6 @@ class SOM(object):
             self._sess = tf.Session()
 
             ##INITIALIZE VARIABLES
-            # init_op = tf.initialize_all_variables()
             init_op = tf.global_variables_initializer()
             self._sess.run(init_op)
 
@@ -142,7 +141,7 @@ class SOM(object):
 
         #Training iterations
         for iter_no in range(self._n_iterations):
-            print('-- Iteracao nº' + iter_no + ' --')
+            print('-- Iteracao nº' + str(iter_no) + ' --')
             #Train with each vector one by one
             for input_vect in input_vects:
                 self._sess.run(self._training_op,

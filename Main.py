@@ -35,8 +35,14 @@ if __name__ == "__main__":
 		kmeans.roda_kmeans(5)
 		kmeans.plots(type='movement')
 
-		som = SOM(5,5,33752)
+		som = SOM(20, 30, 3, 33752)
 		som.train(dados)
+
+		#Get output grid
+		# image_grid = som.get_centroids()
+
+		#Map colours to their closest neurons
+		# mapped = som.map_vects(colors)
 
 	else:
 		preprocessor = preprocessor.ProcessTexts()
