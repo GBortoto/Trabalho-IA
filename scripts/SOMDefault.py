@@ -181,6 +181,7 @@ class MiniSom(object):
         """Trains the SOM picking samples at random from data"""
         self._init_T(num_iteration)
         for iteration in range(num_iteration):
+            print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
             # pick a random sample
             rand_i = self._random_generator.randint(len(data))
             self.update(data[rand_i], self.winner(data[rand_i]), iteration)
@@ -190,6 +191,7 @@ class MiniSom(object):
         self._init_T(len(data)*num_iteration)
         iteration = 0
         while iteration < num_iteration:
+            print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
             idx = iteration % (len(data)-1)
             self.update(data[idx], self.winner(data[idx]), iteration)
             iteration += 1
