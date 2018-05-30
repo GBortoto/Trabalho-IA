@@ -1,3 +1,5 @@
+"""."""
+
 from math import sqrt
 
 from numpy import (array, unravel_index, nditer, linalg, random, subtract,
@@ -16,17 +18,21 @@ import unittest
 
 
 def fast_norm(x):
-    """Returns norm-2 of a 1-D numpy array.
+    """Return norm-2 of a 1-D numpy array.
+
     * faster than linalg.norm in case of 1-D arrays (numpy 1.9.2rc1).
     """
     return sqrt(dot(x, x.T))
 
 
 class MiniSom(object):
+    """."""
+
     def __init__(self, x, y, input_len, sigma=1.0, learning_rate=0.5,
                  decay_function=None, neighborhood_function='gaussian',
                  random_seed=None):
-        """Initializes a Self Organizing Maps.
+        """Initialize a Self Organizing Maps.
+
         Parameters
         ----------
         decision_tree : decision tree
@@ -56,6 +62,7 @@ class MiniSom(object):
             possible values: 'gaussian', 'mexican_hat'
         random_seed : int, optiona (default=None)
             Random seed to use.
+
         """
         if sigma >= x/2.0 or sigma >= y/2.0:
             warn('Warning: sigma is too high for the dimension of the map.')
@@ -88,12 +95,11 @@ class MiniSom(object):
         self.neighborhood = neig_functions[neighborhood_function]
 
     def get_weights(self):
-        """Returns the weights of the neural network"""
+        """Return the weights of the neural network."""
         return self._weights
 
     def _activate(self, x):
-        """Updates matrix activation_map, in this matrix
-           the element i,j is the response of the neuron i,j to x"""
+        """Update matrix activation_map, in this matrix the element i,j is the response of the neuron i,j to x."""
         s = subtract(x, self._weights)  # x - w
         it = nditer(self._activation_map, flags=['multi_index'])
         while not it.finished:
@@ -102,32 +108,33 @@ class MiniSom(object):
             it.iternext()
 
     def activate(self, x):
-        """Returns the activation map to x"""
+        """Return the activation map to x."""
         self._activate(x)
         return self._activation_map
 
     def _gaussian(self, c, sigma):
-        """Returns a Gaussian centered in c"""
+        """Return a Gaussian centered in c."""
         d = 2*pi*sigma*sigma
         ax = exp(-power(self._neigx-c[0], 2)/d)
         ay = exp(-power(self._neigy-c[1], 2)/d)
         return outer(ax, ay)  # the external product gives a matrix
 
     def _mexican_hat(self, c, sigma):
-        """Mexican hat centered in c"""
+        """Mexican hat centered in c."""
         xx, yy = meshgrid(self._neigx, self._neigy)
         p = power(xx-c[0], 2) + power(yy-c[1], 2)
         d = 2*pi*sigma*sigma
         return exp(-p/d)*(1-2/d*p)
 
     def winner(self, x):
-        """Computes the coordinates of the winning neuron for the sample x"""
+        """Compute the coordinates of the winning neuron for the sample x."""
         self._activate(x)
         return unravel_index(self._activation_map.argmin(),
                              self._activation_map.shape)
 
     def update(self, x, win, t):
-        """Updates the weights of the neurons.
+        """Update the weights of the neurons.
+
         Parameters
         ----------
         x : np.array
@@ -136,6 +143,7 @@ class MiniSom(object):
             Position of the winning neuron for x (array or tuple).
         t : int
             Iteration index
+
         """
         eta = self._decay_function(self._learning_rate, t, self.T)
         # sigma and learning rate decrease with the same rule
@@ -153,16 +161,14 @@ class MiniSom(object):
             it.iternext()
 
     def quantization(self, data):
-        """Assigns a code book (weights vector of the winning neuron)
-        to each sample in data."""
+        """Assign a code book (weights vector of the winning neuron) to each sample in data."""
         q = zeros(data.shape)
         for i, x in enumerate(data):
             q[i] = self._weights[self.winner(x)]
         return q
 
     def random_weights_init(self, data):
-        """Initializes the weights of the SOM
-        picking random samples from data"""
+        """Initialize the weights of the SOM picking random samples from data."""
         it = nditer(self._activation_map, flags=['multi_index'])
         while not it.finished:
             rand_i = self._random_generator.randint(len(data))

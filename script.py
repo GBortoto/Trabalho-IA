@@ -1,3 +1,5 @@
+"""."""
+
 from math import sqrt
 
 from numpy import (array, unravel_index, nditer, linalg, random, subtract,
@@ -16,17 +18,21 @@ import unittest
 
 
 def fast_norm(x):
-    """Returns norm-2 of a 1-D numpy array.
+    """Return norm-2 of a 1-D numpy array.
+
     * faster than linalg.norm in case of 1-D arrays (numpy 1.9.2rc1).
     """
     return sqrt(dot(x, x.T))
 
 
 class MiniSom(object):
+    """."""
+
     def __init__(self, x, y, input_len, sigma=1.0, learning_rate=0.5,
                  decay_function=None, neighborhood_function='gaussian',
                  random_seed=None):
-        """Initializes a Self Organizing Maps.
+        """Initialize a Self Organizing Maps.
+
         Parameters
         ----------
         decision_tree : decision tree
@@ -56,6 +62,7 @@ class MiniSom(object):
             possible values: 'gaussian', 'mexican_hat'
         random_seed : int, optiona (default=None)
             Random seed to use.
+
         """
         if sigma >= x/2.0 or sigma >= y/2.0:
             warn('Warning: sigma is too high for the dimension of the map.')
@@ -88,12 +95,11 @@ class MiniSom(object):
         self.neighborhood = neig_functions[neighborhood_function]
 
     def get_weights(self):
-        """Returns the weights of the neural network"""
+        """Return the weights of the neural network."""
         return self._weights
 
     def _activate(self, x):
-        """Updates matrix activation_map, in this matrix
-           the element i,j is the response of the neuron i,j to x"""
+        """Update matrix activation_map, in this matrix the element i,j is the response of the neuron i,j to x."""
         s = subtract(x, self._weights)  # x - w
         it = nditer(self._activation_map, flags=['multi_index'])
         while not it.finished:
@@ -102,32 +108,33 @@ class MiniSom(object):
             it.iternext()
 
     def activate(self, x):
-        """Returns the activation map to x"""
+        """Return the activation map to x."""
         self._activate(x)
         return self._activation_map
 
     def _gaussian(self, c, sigma):
-        """Returns a Gaussian centered in c"""
+        """Return a Gaussian centered in c."""
         d = 2*pi*sigma*sigma
         ax = exp(-power(self._neigx-c[0], 2)/d)
         ay = exp(-power(self._neigy-c[1], 2)/d)
         return outer(ax, ay)  # the external product gives a matrix
 
     def _mexican_hat(self, c, sigma):
-        """Mexican hat centered in c"""
+        """Mexican hat centered in c."""
         xx, yy = meshgrid(self._neigx, self._neigy)
         p = power(xx-c[0], 2) + power(yy-c[1], 2)
         d = 2*pi*sigma*sigma
         return exp(-p/d)*(1-2/d*p)
 
     def winner(self, x):
-        """Computes the coordinates of the winning neuron for the sample x"""
+        """Compute the coordinates of the winning neuron for the sample x."""
         self._activate(x)
         return unravel_index(self._activation_map.argmin(),
                              self._activation_map.shape)
 
     def update(self, x, win, t):
-        """Updates the weights of the neurons.
+        """Update the weights of the neurons.
+
         Parameters
         ----------
         x : np.array
@@ -136,6 +143,7 @@ class MiniSom(object):
             Position of the winning neuron for x (array or tuple).
         t : int
             Iteration index
+
         """
         eta = self._decay_function(self._learning_rate, t, self.T)
         # sigma and learning rate decrease with the same rule
@@ -153,16 +161,14 @@ class MiniSom(object):
             it.iternext()
 
     def quantization(self, data):
-        """Assigns a code book (weights vector of the winning neuron)
-        to each sample in data."""
+        """Assign a code book (weights vector of the winning neuron) to each sample in data."""
         q = zeros(data.shape)
         for i, x in enumerate(data):
             q[i] = self._weights[self.winner(x)]
         return q
 
     def random_weights_init(self, data):
-        """Initializes the weights of the SOM
-        picking random samples from data"""
+        """Initialize the weights of the SOM picking random samples from data."""
         it = nditer(self._activation_map, flags=['multi_index'])
         while not it.finished:
             rand_i = self._random_generator.randint(len(data))
@@ -513,213 +519,6 @@ class KMeans():
     def movimenta_centroides(self, closest):
         """."""
         return np.array([self.points[closest == k].mean(axis=0) for k in range(self.centroids.shape[0])])
-"""."""
-# Ativar para rodar SOM local
-# import sompy as sompy
-
-
-class SomDefault():
-    """."""
-
-    def __init__(self, data):
-        """."""
-        som = sompy.SOMFactory.build(data, [50, 50], mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='pca', neighborhood='gaussian', training='batch', name='sompy')
-        som.train(n_job=3, verbose='info')
-        v = sompy.mapview.View2DPacked(50, 50, 'test',text_size=8)
-        # could be done in a one-liner: sompy.mapview.View2DPacked(300, 300, 'test').show(som)
-        v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6) #which_dim='all' default
-        # v.save('2d_packed_test')
-# -*- coding: utf-8 -*-
-
-# import tensforflow as tf
-
-class SOM(object):
-    """
-    2-D Self-Organizing Map with Gaussian Neighbourhood function
-    and linearly decreasing learning rate.
-    """
-
-    # To check if the SOM has been trained
-    _trained = False
-
-    def __init__(self, m, n, dim, n_iterations=100, alpha=None, sigma=None):
-        """
-        m x n -> dimensao do SOM
-        n_interations -> #epocas que será treinado a rede
-        alpha -> taxa de aprendizagem. Default 0.3
-        sigma -> taxa de vizinhança. Define o raio que o BMU afeta. Default max(m, n)
-        """
-
-        # Assign required variables first
-        self._m = m
-        self._n = n
-        if alpha is None:
-            alpha = 0.3
-        else:
-            alpha = float(alpha)
-        if sigma is None:
-            sigma = max(m, n) / 2.0
-        else:
-            sigma = float(sigma)
-        self._n_iterations = abs(int(n_iterations))
-
-        ##INITIALIZE GRAPH - TF Graphs é o confunto de operações que serão realizadas + operadores
-        self._graph = tf.Graph()
-
-        ##POPULATE GRAPH WITH NECESSARY COMPONENTS
-        with self._graph.as_default():
-
-            ##VARIABLES AND CONSTANT OPS FOR DATA STORAGE
-
-            #Randomly initialized weightage vectors for all neurons,
-            #stored together as a matrix Variable of size [m*n, dim]
-            self._weightage_vects = tf.Variable(tf.random_normal([m*n, dim]))
-
-            #Matrix of size [m*n, 2] for SOM grid locations
-            #of neurons
-            self._location_vects = tf.constant(np.array(
-                list(self._neuron_locations(m, n))))
-
-            ##PLACEHOLDERS FOR TRAINING INPUTS
-            #We need to assign them as attributes to self, since they
-            #will be fed in during training
-
-            #The training vector
-            self._vect_input = tf.placeholder("float", [dim])
-            #Iteration number
-            self._iter_input = tf.placeholder("float")
-
-            ##CONSTRUCT TRAINING OP PIECE BY PIECE
-            #Only the final, 'root' training op needs to be assigned as
-            #an attribute to self, since all the rest will be executed
-            #automatically during training
-
-            #To compute the Best Matching Unit given a vector
-            #Basically calculates the Euclidean distance between every
-            #neuron's weightage vector and the input, and returns the
-            #index of the neuron which gives the least value
-            bmu_index = tf.argmin(tf.sqrt(tf.reduce_sum(
-                tf.pow(tf.subtract(self._weightage_vects, tf.stack(
-                    [self._vect_input for i in range(m*n)])), 2), 1)),
-                                  0)
-
-            #This will extract the location of the BMU based on the BMU's
-            #index
-            slice_input = tf.pad(tf.reshape(bmu_index, [1]),
-                                 np.array([[0, 1]]))
-            bmu_loc = tf.reshape(tf.slice(self._location_vects, slice_input,
-                                          tf.constant(np.array([1, 2]))),
-                                 [2])
-
-            #To compute the alpha and sigma values based on iteration
-            #number
-            learning_rate_op = tf.subtract(1.0, tf.divide(self._iter_input,
-                                                  self._n_iterations))
-            _alpha_op = tf.multiply(alpha, learning_rate_op)
-            _sigma_op = tf.multiply(sigma, learning_rate_op)
-
-            #Construct the op that will generate a vector with learning
-            #rates for all neurons, based on iteration number and location
-            #wrt BMU.
-            bmu_distance_squares = tf.reduce_sum(tf.pow(tf.subtract(
-                self._location_vects, tf.stack(
-                    [bmu_loc for i in range(m*n)])), 2), 1)
-            neighbourhood_func = tf.exp(tf.negative(tf.divide(tf.cast(
-                bmu_distance_squares, "float32"), tf.pow(_sigma_op, 2))))
-            learning_rate_op = tf.multiply(_alpha_op, neighbourhood_func)
-
-            #Finally, the op that will use learning_rate_op to update
-            #the weightage vectors of all neurons based on a particular
-            #input
-            learning_rate_multiplier = tf.stack([tf.tile(tf.slice(
-                learning_rate_op, np.array([i]), np.array([1])), [dim])
-                                               for i in range(m*n)])
-            weightage_delta = tf.multiply(
-                learning_rate_multiplier,
-                tf.subtract(tf.stack([self._vect_input for i in range(m*n)]),
-                       self._weightage_vects))
-            new_weightages_op = tf.add(self._weightage_vects,
-                                       weightage_delta)
-            self._training_op = tf.assign(self._weightage_vects,
-                                          new_weightages_op)
-
-            ##INITIALIZE SESSION
-            self._sess = tf.Session()
-
-            ##INITIALIZE VARIABLES
-            init_op = tf.global_variables_initializer()
-            self._sess.run(init_op)
-
-    def _neuron_locations(self, m, n):
-        """
-        Yields one by one the 2-D locations of the individual neurons
-        in the SOM.
-        """
-        #Nested iterations over both dimensions
-        #to generate all 2-D locations in the map
-        for i in range(m):
-            for j in range(n):
-                yield np.array([i, j])
-
-    def train(self, input_vects):
-        """
-        Trains the SOM.
-        'input_vects' should be an iterable of 1-D NumPy arrays with
-        dimensionality as provided during initialization of this SOM.
-        Current weightage vectors for all neurons(initially random) are
-        taken as starting conditions for training.
-        """
-
-        #Training iterations
-        for iter_no in range(self._n_iterations):
-            print('-- Iteracao nº' + str(iter_no) + ' --')
-            #Train with each vector one by one
-            for input_vect in input_vects:
-                self._sess.run(self._training_op,
-                               feed_dict={self._vect_input: input_vect,
-                                          self._iter_input: iter_no})
-
-        #Store a centroid grid for easy retrieval later on
-        centroid_grid = [[] for i in range(self._m)]
-        self._weightages = list(self._sess.run(self._weightage_vects))
-        self._locations = list(self._sess.run(self._location_vects))
-        for i, loc in enumerate(self._locations):
-            centroid_grid[loc[0]].append(self._weightages[i])
-        self._centroid_grid = centroid_grid
-
-        self._trained = True
-
-    def get_centroids(self):
-        """
-        Returns a list of 'm' lists, with each inner list containing
-        the 'n' corresponding centroid locations as 1-D NumPy arrays.
-        """
-        if not self._trained:
-            raise ValueError("SOM not trained yet")
-        return self._centroid_grid
-
-    def map_vects(self, input_vects):
-        """
-        Maps each input vector to the relevant neuron in the SOM
-        grid.
-        'input_vects' should be an iterable of 1-D NumPy arrays with
-        dimensionality as provided during initialization of this SOM.
-        Returns a list of 1-D NumPy arrays containing (row, column)
-        info for each input vector(in the same order), corresponding
-        to mapped neuron.
-        """
-
-        if not self._trained:
-            raise ValueError("SOM not trained yet")
-
-        to_return = []
-        for vect in input_vects:
-            min_index = min([i for i in range(len(self._weightages))],
-                            key=lambda x: np.linalg.norm(vect-
-                                                         self._weightages[x]))
-            to_return.append(self._locations[min_index])
-
-        return to_return
 # -*- coding: utf-8 -*-
 
 # Ativar qd rodar localmente
@@ -746,8 +545,8 @@ from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmat
 
 
 if __name__ == "__main__":
-	# env = 'kaggle'
-	env = 'local'
+	env = 'kaggle'
+	# env = 'local'
 
 	if env == 'kaggle':
 		preprocessor = ProcessTexts(texts=['bbc_kaggle'])
@@ -765,9 +564,10 @@ if __name__ == "__main__":
 
 		# Implementação usando MiniSOM + kaggle
 		map_dim = 16
-		som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
+		# som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
+		som = MiniSom(map_dim, map_dim, 33752, sigma=1.0, random_seed=1)
 		#som.random_weights_init(W)
-		som.train_batch(data, len(data)*500)
+		som.train_batch(dados, len(dados)*500)
 
 		# som = SOM(20, 30, 3, 33752)
 		# som.train(dados)

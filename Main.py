@@ -24,8 +24,8 @@ from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmat
 
 
 if __name__ == "__main__":
-	# env = 'kaggle'
-	env = 'local'
+	env = 'kaggle'
+	# env = 'local'
 
 	if env == 'kaggle':
 		preprocessor = ProcessTexts(texts=['bbc_kaggle'])
@@ -40,12 +40,13 @@ if __name__ == "__main__":
 		# kmeans.plots()
 		# kmeans.roda_kmeans(5)
 		# kmeans.plots(type='movement')
-
+		print('----- Iniciando Processamento SOM -----')
 		# Implementação usando MiniSOM + kaggle
 		map_dim = 16
-		som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
+		# som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
+		som = MiniSom(map_dim, map_dim, 33752, sigma=1.0, random_seed=1)
 		#som.random_weights_init(W)
-		som.train_batch(data, len(data)*500)
+		som.train_batch(dados, len(dados)*500)
 
 		# som = SOM(20, 30, 3, 33752)
 		# som.train(dados)
