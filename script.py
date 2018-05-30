@@ -181,6 +181,7 @@ class MiniSom(object):
         """Trains the SOM picking samples at random from data"""
         self._init_T(num_iteration)
         for iteration in range(num_iteration):
+            print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
             # pick a random sample
             rand_i = self._random_generator.randint(len(data))
             self.update(data[rand_i], self.winner(data[rand_i]), iteration)
@@ -190,6 +191,7 @@ class MiniSom(object):
         self._init_T(len(data)*num_iteration)
         iteration = 0
         while iteration < num_iteration:
+            print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
             idx = iteration % (len(data)-1)
             self.update(data[idx], self.winner(data[idx]), iteration)
             iteration += 1
@@ -343,8 +345,8 @@ class TransformMatrix():
 
 	def _matrix_creation(self):
 		# Iremos criar uma "vetorizacao" baseado em frequencia (count)
-		# vectorizer = CountVectorizer(max_df=0.9, min_df=0.05)
-		vectorizer = CountVectorizer()
+		vectorizer = CountVectorizer(max_df=0.9, min_df=0.05)
+		# vectorizer = CountVectorizer()
 
 		#Retorna array TF de cada palavra
 		self.bag_of_words = (vectorizer.fit_transform(self.matrix)).toarray()
@@ -543,6 +545,8 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
 
+from pylab import plot, axis, show, pcolor, colorbar, bone
+
 
 if __name__ == "__main__":
 	env = 'kaggle'
@@ -561,22 +565,34 @@ if __name__ == "__main__":
 		# kmeans.plots()
 		# kmeans.roda_kmeans(5)
 		# kmeans.plots(type='movement')
-
+		print('----- Iniciando Processamento SOM -----')
 		# Implementação usando MiniSOM + kaggle
 		map_dim = 16
 		# som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
-		som = MiniSom(map_dim, map_dim, 33752, sigma=1.0, random_seed=1)
+		print('Shape' + str(dados.shape))
+		som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
+		som.random_weights_init(dados)
 		#som.random_weights_init(W)
-		som.train_batch(dados, len(dados)*500)
+		som.train_batch(dados, 10000)
 
-		# som = SOM(20, 30, 3, 33752)
-		# som.train(dados)
-
-		#Get output grid
-		# image_grid = som.get_centroids()
-
-		#Map colours to their closest neurons
-		# mapped = som.map_vects(colors)
+		bone()
+		pcolor(som.distance_map().T) # distance map as background
+		colorbar()
+		# loading the labels
+		target = genfromtxt('iris.csv', delimiter=',',usecols=(4),dtype=str)
+		t = zeros(len(target),dtype=int)
+		t[target == 'setosa'] = 0
+		t[target == 'versicolor'] = 1
+		t[target == 'virginica'] = 2
+		# use different colors and markers for each label
+		markers = ['o','s','D']
+		colors = ['r','g','b']
+		for cnt,xx in enumerate(dados):
+			w = som.winner(xx) # getting the winner
+			# palce a marker on the winning position for the sample xx
+			plot(w[0]+.5,w[1]+.5,markers[t[cnt]],markerfacecolor='None', markeredgecolor=colors[t[cnt]],markersize=12,markeredgewidth=2)
+		axis([0,som.weights.shape[0],0,som.weights.shape[1]])
+		show() # show the figure
 
 	else:
 		preprocessor = ProcessTexts(texts=['bbc_local'])

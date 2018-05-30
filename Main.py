@@ -44,18 +44,11 @@ if __name__ == "__main__":
 		# Implementação usando MiniSOM + kaggle
 		map_dim = 16
 		# som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
-		som = MiniSom(map_dim, map_dim, 33752, sigma=1.0, random_seed=1)
+		print('Shape' + str(dados.shape))
+		som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
+		som.random_weights_init(dados)
 		#som.random_weights_init(W)
-		som.train_batch(dados, len(dados)*500)
-
-		# som = SOM(20, 30, 3, 33752)
-		# som.train(dados)
-
-		#Get output grid
-		# image_grid = som.get_centroids()
-
-		#Map colours to their closest neurons
-		# mapped = som.map_vects(colors)
+		som.train_batch(dados, 10000)
 
 	else:
 		preprocessor = ProcessTexts(texts=['bbc_local'])

@@ -16,8 +16,8 @@ class TransformMatrix():
 
 	def _matrix_creation(self):
 		# Iremos criar uma "vetorizacao" baseado em frequencia (count)
-		# vectorizer = CountVectorizer(max_df=0.9, min_df=0.05)
-		vectorizer = CountVectorizer()
+		vectorizer = CountVectorizer(max_df=0.9, min_df=0.05)
+		# vectorizer = CountVectorizer()
 
 		#Retorna array TF de cada palavra
 		self.bag_of_words = (vectorizer.fit_transform(self.matrix)).toarray()
