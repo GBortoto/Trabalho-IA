@@ -11,9 +11,9 @@
 class ProcessTexts():
     """."""
 
-    def __init__(self):
+    def __init__(self, texts):
         """."""
-        self._read_text(texts=['bbc_kaggle'])
+        self._read_text(texts)
         self._process_text()
 
     def _read_text(self, texts):

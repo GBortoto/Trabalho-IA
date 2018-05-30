@@ -12,6 +12,9 @@ import string
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
+# Ativar para rodar SOM local
+# import sompy as sompy
+
 from sklearn.cluster import KMeans as KMeansDefault
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -21,22 +24,31 @@ from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmat
 
 
 if __name__ == "__main__":
-	env = 'kaggle'
+	# env = 'kaggle'
+	env = 'local'
 
 	if env == 'kaggle':
-		preprocessor = ProcessTexts()
+		preprocessor = ProcessTexts(texts=['bbc_kaggle'])
 		print('----- Transformando Tokens em Matriz -----')
 		matrix = TransformMatrix(preprocessor.tokens)
 		print('----- Resultados do bag of words -----')
-		dados = matrix.get_matrix(type='tf-n')
-		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
-		kmeans = KMeans(dados)
-		# kmeans.plots()
-		kmeans.roda_kmeans(5)
-		kmeans.plots(type='movement')
+		dados = matrix.get_matrix(type='tf-idf')
 
-		som = SOM(20, 30, 3, 33752)
-		som.train(dados)
+
+		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
+		# kmeans = KMeans(dados)
+		# kmeans.plots()
+		# kmeans.roda_kmeans(5)
+		# kmeans.plots(type='movement')
+
+		# Implementação usando MiniSOM + kaggle
+		map_dim = 16
+		som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
+		#som.random_weights_init(W)
+		som.train_batch(data, len(data)*500)
+
+		# som = SOM(20, 30, 3, 33752)
+		# som.train(dados)
 
 		#Get output grid
 		# image_grid = som.get_centroids()
@@ -45,16 +57,19 @@ if __name__ == "__main__":
 		# mapped = som.map_vects(colors)
 
 	else:
-		preprocessor = preprocessor.ProcessTexts()
+		preprocessor = ProcessTexts(texts=['bbc_local'])
 		print('----- Transformando Tokens em Matriz -----')
-		matrix = mtx.TransformMatrix(preprocessor.tokens)
+		matrix = TransformMatrix(preprocessor.tokens)
 		print('----- Resultados do bag of words -----')
-
+		data = matrix.get_matrix(type='tf-idf')
 		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
-		kmeans = kmeans.KMeans(matrix.get_matrix(type='tf-n'))
+		kmeans = KMeans(data)
 		# kmeans.plots()
-		kmeans.roda_kmeans(5)
-		kmeans.plots(type='movement')
+		# kmeans.roda_kmeans(5)
+		# kmeans.plots(type='movement')
+
+		# Implementação local do SOM
+		# som = SomDefault(data)
 
 
 	"""
