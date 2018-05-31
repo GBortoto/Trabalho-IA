@@ -436,9 +436,7 @@ class ProcessTexts():
                 tokens_of_sentence = tokens_of_sentence + stemmerized
             self.tokens.append(tokens_of_sentence)
         del self._texts
-        print(self.tokens[0])
         self._join_words()
-        print(self.tokens[0])
 
     def _normalize_text(self, tokens, type):
         if type is 'Porter':
@@ -498,6 +496,24 @@ class KMeans():
             plt.scatter(self.points[:, 0], self.points[:, 1])
             plt.scatter(self.centroids[:, 0], self.centroids[:, 1], c='r', s=100)
 
+        if type == 'movement2':
+            plt.subplot(121)
+            plt.scatter(self.points[:, 1], self.points[:, 2])
+            plt.scatter(self.centroids[:, 1], self.centroids[:, 2], c='r', s=100)
+
+            plt.subplot(122)
+            plt.scatter(self.points[:, 1], self.points[:, 2])
+            plt.scatter(self.centroids[:, 1], self.centroids[:, 2], c='r', s=100)
+
+        if type == 'movement3':
+            plt.subplot(121)
+            plt.scatter(self.points[:, 2], self.points[:, 3])
+            plt.scatter(self.centroids[:, 2], self.centroids[:, 3], c='r', s=100)
+
+            plt.subplot(122)
+            plt.scatter(self.points[:, 2], self.points[:, 3])
+            plt.scatter(self.centroids[:, 2], self.centroids[:, 3], c='r', s=100)
+
         if save is False:
             plt.show()
         else:
@@ -515,10 +531,11 @@ class KMeans():
         distancias = np.sqrt(((self.points - self.centroids[:, np.newaxis]) ** 2).sum(axis=2))
         return np.argmin(distancias, axis=0)
 
-    def roda_kmeans(self, k_centroids):
+    def roda_kmeans(self, k_centroids, n_iteracoes=1000):
         """."""
         self.inicia_centroides(k_centroids)
-        self.movimenta_centroides(self.busca_centroides_mais_proximo())
+        for iteration in range(n_iteracoes):
+            self.centroids = self.movimenta_centroides(self.busca_centroides_mais_proximo())
 
     def movimenta_centroides(self, closest):
         """."""
@@ -561,10 +578,13 @@ if __name__ == "__main__":
 
 
 		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
-		# kmeans = KMeans(dados)
+		kmeans = KMeans(dados)
 		# kmeans.plots()
-		# kmeans.roda_kmeans(5)
-		# kmeans.plots(type='movement')
+		kmeans.roda_kmeans(5)
+		kmeans.plots(type='movement')
+		kmeans.plots(type='movement2')
+		kmeans.plots(type='movement3')
+
 		# print('----- Iniciando Processamento SOM -----')
 		# Implementação usando MiniSOM + kaggle
 		# map_dim = 16

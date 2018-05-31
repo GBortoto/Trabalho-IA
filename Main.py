@@ -36,10 +36,13 @@ if __name__ == "__main__":
 
 
 		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
-		# kmeans = KMeans(dados)
+		kmeans = KMeans(dados)
 		# kmeans.plots()
-		# kmeans.roda_kmeans(5)
-		# kmeans.plots(type='movement')
+		kmeans.roda_kmeans(5)
+		kmeans.plots(type='movement')
+		kmeans.plots(type='movement2')
+		kmeans.plots(type='movement3')
+
 		# print('----- Iniciando Processamento SOM -----')
 		# Implementação usando MiniSOM + kaggle
 		# map_dim = 16
