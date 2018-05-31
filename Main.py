@@ -21,7 +21,7 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
-
+from sklearn.decomposition import PCA
 
 if __name__ == "__main__":
 	env = 'kaggle'
@@ -42,6 +42,7 @@ if __name__ == "__main__":
 		kmeans.plots(type='movement')
 		kmeans.plots(type='movement2')
 		kmeans.plots(type='movement3')
+		kmeans.plots(type='points')
 
 		# print('----- Iniciando Processamento SOM -----')
 		# Implementação usando MiniSOM + kaggle
