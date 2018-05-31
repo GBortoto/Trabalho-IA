@@ -436,7 +436,9 @@ class ProcessTexts():
                 tokens_of_sentence = tokens_of_sentence + stemmerized
             self.tokens.append(tokens_of_sentence)
         del self._texts
+        print(self.tokens[0])
         self._join_words()
+        print(self.tokens[0])
 
     def _normalize_text(self, tokens, type):
         if type is 'Porter':
@@ -545,8 +547,6 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
 
-from pylab import plot, axis, show, pcolor, colorbar, bone
-
 
 if __name__ == "__main__":
 	env = 'kaggle'
@@ -565,34 +565,15 @@ if __name__ == "__main__":
 		# kmeans.plots()
 		# kmeans.roda_kmeans(5)
 		# kmeans.plots(type='movement')
-		print('----- Iniciando Processamento SOM -----')
+		# print('----- Iniciando Processamento SOM -----')
 		# Implementação usando MiniSOM + kaggle
-		map_dim = 16
+		# map_dim = 16
 		# som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
-		print('Shape' + str(dados.shape))
-		som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
-		som.random_weights_init(dados)
+		# print('Shape' + str(dados.shape))
+		# som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
+		# som.random_weights_init(dados)
 		#som.random_weights_init(W)
-		som.train_batch(dados, 10000)
-
-		bone()
-		pcolor(som.distance_map().T) # distance map as background
-		colorbar()
-		# loading the labels
-		target = genfromtxt('iris.csv', delimiter=',',usecols=(4),dtype=str)
-		t = zeros(len(target),dtype=int)
-		t[target == 'setosa'] = 0
-		t[target == 'versicolor'] = 1
-		t[target == 'virginica'] = 2
-		# use different colors and markers for each label
-		markers = ['o','s','D']
-		colors = ['r','g','b']
-		for cnt,xx in enumerate(dados):
-			w = som.winner(xx) # getting the winner
-			# palce a marker on the winning position for the sample xx
-			plot(w[0]+.5,w[1]+.5,markers[t[cnt]],markerfacecolor='None', markeredgecolor=colors[t[cnt]],markersize=12,markeredgewidth=2)
-		axis([0,som.weights.shape[0],0,som.weights.shape[1]])
-		show() # show the figure
+		# som.train_batch(dados, 10000)
 
 	else:
 		preprocessor = ProcessTexts(texts=['bbc_local'])
@@ -610,16 +591,16 @@ if __name__ == "__main__":
 		# som = SomDefault(data)
 
 
-	"""
-		[X] - Ler todos os textos
-		[X] - Fazer data clean dos dados
-		[X] - Roda Bag of Words para transformar lista de textos em vetor bidimensional de frequencia de palavra por texto
-		[X] - Criar 3 outputs do Bag of Words
-			[X] - Matrix binaria
-			[X] - Matrix tf
-			[X] - Matrix tf_idf
-			[] - Ngrams
-		[] - Rodar K-means para cada matrix
-		[] - Rodar SOM para cada matrix
-		[] - Pos-processamento
-	"""
+"""
+	[X] - Ler todos os textos
+	[X] - Fazer data clean dos dados
+	[X] - Roda Bag of Words para transformar lista de textos em vetor bidimensional de frequencia de palavra por texto
+	[X] - Criar 3 outputs do Bag of Words
+	[X] - Matrix binaria
+	[X] - Matrix tf
+	[X] - Matrix tf_idf
+	[] - Ngrams
+	[] - Rodar K-means para cada matrix
+	[] - Rodar SOM para cada matrix
+	[] - Pos-processamento
+"""

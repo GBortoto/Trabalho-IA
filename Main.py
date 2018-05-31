@@ -40,15 +40,15 @@ if __name__ == "__main__":
 		# kmeans.plots()
 		# kmeans.roda_kmeans(5)
 		# kmeans.plots(type='movement')
-		print('----- Iniciando Processamento SOM -----')
+		# print('----- Iniciando Processamento SOM -----')
 		# Implementação usando MiniSOM + kaggle
-		map_dim = 16
+		# map_dim = 16
 		# som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
-		print('Shape' + str(dados.shape))
-		som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
-		som.random_weights_init(dados)
+		# print('Shape' + str(dados.shape))
+		# som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
+		# som.random_weights_init(dados)
 		#som.random_weights_init(W)
-		som.train_batch(dados, 10000)
+		# som.train_batch(dados, 10000)
 
 	else:
 		preprocessor = ProcessTexts(texts=['bbc_local'])
@@ -66,16 +66,16 @@ if __name__ == "__main__":
 		# som = SomDefault(data)
 
 
-	"""
-		[X] - Ler todos os textos
-		[X] - Fazer data clean dos dados
-		[X] - Roda Bag of Words para transformar lista de textos em vetor bidimensional de frequencia de palavra por texto
-		[X] - Criar 3 outputs do Bag of Words
-			[X] - Matrix binaria
-			[X] - Matrix tf
-			[X] - Matrix tf_idf
-			[] - Ngrams
-		[] - Rodar K-means para cada matrix
-		[] - Rodar SOM para cada matrix
-		[] - Pos-processamento
-	"""
+"""
+	[X] - Ler todos os textos
+	[X] - Fazer data clean dos dados
+	[X] - Roda Bag of Words para transformar lista de textos em vetor bidimensional de frequencia de palavra por texto
+	[X] - Criar 3 outputs do Bag of Words
+	[X] - Matrix binaria
+	[X] - Matrix tf
+	[X] - Matrix tf_idf
+	[] - Ngrams
+	[] - Rodar K-means para cada matrix
+	[] - Rodar SOM para cada matrix
+	[] - Pos-processamento
+"""
