@@ -200,6 +200,27 @@ class Preprocessor():
         return newListOfWords
 
     """
+<<<<<<< current
+=======
+    7-aux) Bag of Words (recebe um texto em string) ____________________________
+    - FUNÇÃO  :
+    - RETORNO :
+    """
+    # VARIÁVEL GLOBAL UTILIZADA : vectorizer
+    def bagOfWordsForTextInString(self, text: str):
+        return vectorizer.fit_transform(text).todense()
+
+    """
+    7) Bag of Words ____________________________________________________________
+    - FUNÇÃO  :
+    - RETORNO :
+    """
+    def bagOfWords(self, listOfWords: List[str]):
+        text = " ".join(listOfWords)
+        return bagOfWordsForTextInString(text)
+
+    """
+>>>>>>> before discard
     8) Erase Emails
     - FUNÇÃO  : recebe uma lista de strings e apaga todos os emails dentro dela
     - RETORNO : retorna uma lista de string sem e-mails dentro dela
