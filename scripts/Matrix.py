@@ -14,9 +14,10 @@ class TransformMatrix():
 		# Cria matrix
 		self._matrix_creation()
 
-	def _matrix_creation(self):
+	def _matrix_creation(self, n_gram=(1, 1)):
 		# Iremos criar uma "vetorizacao" baseado em frequencia (count)
-		vectorizer = CountVectorizer(max_df=0.9, min_df=0.05)
+		stop_words = set(stopwords.words('english'))
+		vectorizer = CountVectorizer(max_df=0.9, min_df=0.05, stop_words=stop_words, ngram_range=n_gram)
 		# vectorizer = CountVectorizer()
 
 		#Retorna array TF de cada palavra
