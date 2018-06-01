@@ -246,6 +246,97 @@ class MiniSom(object):
             winmap[self.winner(x)].append(x)
         return winmap
 
+    def plot(self):
+        author_to_color = {0: 'chocolate', 1: 'steelblue', 2: 'dimgray'}
+        color = [author_to_color[yy] for yy in y]
+        plt.figure(figsize=(14, 14))
+        for i, (t, c, vec) in enumerate(zip(titles, color, W)):
+            winnin_position = som.winner(vec)
+            plt.text(winnin_position[0],
+                     winnin_position[1]+np.random.rand()*.9,
+                     t,
+                     color=c)
+
+        plt.xticks(range(map_dim))
+        plt.yticks(range(map_dim))
+        plt.grid()
+        plt.xlim([0, map_dim])
+        plt.ylim([0, map_dim])
+        plt.plot()
+
+    def plot2(self):
+        # Plotting the response for each pattern in the iris dataset
+        plt.bone()
+        plt.pcolor(som.distance_map().T)  # plotting the distance map as background
+        plt.colorbar()
+
+        markers = ['o', 's', 'D']
+        colors = ['r', 'g', 'b']
+        for cnt, xx in enumerate(data):
+            w = som.winner(xx)  # getting the winner
+            # palce a marker on the winning position for the sample xx
+            plt.plot(w[0]+.5, w[1]+.5, markers[t[cnt]], markerfacecolor='None',
+                     markeredgecolor=colors[t[cnt]], markersize=12, markeredgewidth=2)
+        plt.axis([0, 7, 0, 7])
+        plt.show()
+
+    def plot3(self):
+        starting_weights = som.get_weights().copy()  # saving the starting weights
+        print('quantization...')
+        qnt = som.quantization(pixels)  # quantize each pixels of the image
+        print('building new image...')
+        clustered = np.zeros(img.shape)
+        for i, q in enumerate(qnt):  # place the quantized values into a new image
+            clustered[np.unravel_index(i, dims=(img.shape[0], img.shape[1]))] = q
+        print('done.')
+
+        # show the result
+        plt.figure(1)
+        plt.subplot(221)
+        plt.title('original')
+        plt.imshow(img)
+        plt.subplot(222)
+        plt.title('result')
+        plt.imshow(clustered)
+
+        plt.subplot(223)
+        plt.title('initial colors')
+        plt.imshow(starting_weights, interpolation='none')
+        plt.subplot(224)
+        plt.title('learned colors')
+        plt.imshow(som.get_weights(), interpolation='none')
+
+        plt.tight_layout()
+        plt.show()
+
+    def plot4(self):
+        plt.figure(figsize=(7, 7))
+        wmap = {}
+        im = 0
+        for x, t in zip(data, num):  # scatterplot
+            w = som.winner(x)
+            wmap[w] = im
+            plt. text(w[0]+.5,  w[1]+.5,  str(t),
+                      color=plt.cm.Dark2(t / 4.), fontdict={'weight': 'bold',  'size': 11})
+            im = im + 1
+        plt.axis([0, som.get_weights().shape[0], 0,  som.get_weights().shape[1]])
+        plt.show()
+
+    def plot5(self):
+        plt.figure(figsize=(10, 10), facecolor='white')
+        cnt = 0
+        for j in reversed(range(20)):  # images mosaic
+            for i in range(20):
+                plt.subplot(20, 20, cnt+1, frameon=False,  xticks=[],  yticks=[])
+                if (i, j) in wmap:
+                    plt.imshow(digits.images[wmap[(i, j)]],
+                               cmap='Greys', interpolation='nearest')
+                else:
+                    plt.imshow(np.zeros((8, 8)),  cmap='Greys')
+                cnt = cnt + 1
+
+        plt.tight_layout()
+        plt.show()
 
 class TestMinisom(unittest.TestCase):
     def setup_method(self, method):
