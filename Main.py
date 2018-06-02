@@ -38,21 +38,30 @@ if __name__ == "__main__":
 		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
 		kmeans = KMeans(dados)
 		# kmeans.plots()
-		kmeans.roda_kmeans(5)
-		kmeans.plots(type='movement')
-		kmeans.plots(type='movement2')
-		kmeans.plots(type='movement3')
-		kmeans.plots(type='points')
+		# kmeans.roda_kmeans(5)
+		# kmeans.plots(type='movement')
+		# kmeans.plots(type='movement2')
+		# kmeans.plots(type='movement3')
+		# kmeans.plots(type='points')
 
-		# print('----- Iniciando Processamento SOM -----')
+		print('----- Iniciando Processamento SOM -----')
 		# Implementação usando MiniSOM + kaggle
-		# map_dim = 16
-		# som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
+		map_dim = 20
+		som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
 		# print('Shape' + str(dados.shape))
-		# som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
-		# som.random_weights_init(dados)
-		#som.random_weights_init(W)
-		# som.train_batch(dados, 10000)
+		som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
+		som.random_weights_init(dados)
+		som.train_batch(dados, 10000)
+		print('-- Activation Response --')
+		print(som.activation_response(dados))
+		print('-- Quantization Error --')
+		print(som.quantization_error(dados))
+		print('-- Win Map --')
+		print(som.win_map(dados))
+		som.plot2(dados)
+		som.plot3()
+		# som.plot4()
+		som.plot5()
 
 	else:
 		preprocessor = ProcessTexts(texts=['bbc_local'])
@@ -78,8 +87,8 @@ if __name__ == "__main__":
 	[X] - Matrix binaria
 	[X] - Matrix tf
 	[X] - Matrix tf_idf
-	[] - Ngrams
-	[] - Rodar K-means para cada matrix
-	[] - Rodar SOM para cada matrix
+	[X] - Ngrams
+	[X] - Rodar K-means para cada matrix
+	[X] - Rodar SOM para cada matrix
 	[] - Pos-processamento
 """

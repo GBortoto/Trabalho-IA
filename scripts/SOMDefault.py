@@ -1,16 +1,14 @@
-"""."""
+# -*- coding: utf-8 -*-
+
+"""Implementação minimalista do self-organizing maps.
+
+Fonte: https://github.com/JustGlowing/minisom
+"""
 
 from math import sqrt
-
-from numpy import (array, unravel_index, nditer, linalg, random, subtract,
-                   power, exp, pi, zeros, arange, outer, meshgrid, dot)
+from numpy import (array, unravel_index, nditer, linalg, random, subtract, power, exp, pi, zeros, arange, outer, meshgrid, dot)
 from collections import defaultdict
 from warnings import warn
-
-# for unit tests
-from numpy.testing import assert_almost_equal, assert_array_almost_equal
-from numpy.testing import assert_array_equal
-import unittest
 
 """
     Minimalistic implementation of the Self Organizing Maps (SOM).
@@ -22,6 +20,7 @@ def fast_norm(x):
 
     * faster than linalg.norm in case of 1-D arrays (numpy 1.9.2rc1).
     """
+    # Retorna a normalização da matrix. Ref: https://en.wiktionary.org/wiki/two-norm
     return sqrt(dot(x, x.T))
 
 
@@ -181,7 +180,7 @@ class MiniSom(object):
         """Trains the SOM picking samples at random from data"""
         self._init_T(num_iteration)
         for iteration in range(num_iteration):
-            print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
+            # print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
             # pick a random sample
             rand_i = self._random_generator.randint(len(data))
             self.update(data[rand_i], self.winner(data[rand_i]), iteration)
@@ -191,7 +190,7 @@ class MiniSom(object):
         self._init_T(len(data)*num_iteration)
         iteration = 0
         while iteration < num_iteration:
-            print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
+            # print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
             idx = iteration % (len(data)-1)
             self.update(data[idx], self.winner(data[idx]), iteration)
             iteration += 1
@@ -246,12 +245,12 @@ class MiniSom(object):
             winmap[self.winner(x)].append(x)
         return winmap
 
-    def plot(self):
+    def plot(self, dados):
         author_to_color = {0: 'chocolate', 1: 'steelblue', 2: 'dimgray'}
         color = [author_to_color[yy] for yy in y]
         plt.figure(figsize=(14, 14))
-        for i, (t, c, vec) in enumerate(zip(titles, color, W)):
-            winnin_position = som.winner(vec)
+        for i, (t, c, vec) in enumerate(zip(titles, color, dados)):
+            winnin_position = winner(vec)
             plt.text(winnin_position[0],
                      winnin_position[1]+np.random.rand()*.9,
                      t,
@@ -264,16 +263,16 @@ class MiniSom(object):
         plt.ylim([0, map_dim])
         plt.plot()
 
-    def plot2(self):
+    def plot2(self, dados):
         # Plotting the response for each pattern in the iris dataset
         plt.bone()
-        plt.pcolor(som.distance_map().T)  # plotting the distance map as background
+        plt.pcolor(self.distance_map().T)  # plotting the distance map as background
         plt.colorbar()
 
         markers = ['o', 's', 'D']
         colors = ['r', 'g', 'b']
-        for cnt, xx in enumerate(data):
-            w = som.winner(xx)  # getting the winner
+        for cnt, xx in enumerate(dados):
+            w = self.winner(xx)  # getting the winner
             # palce a marker on the winning position for the sample xx
             plt.plot(w[0]+.5, w[1]+.5, markers[t[cnt]], markerfacecolor='None',
                      markeredgecolor=colors[t[cnt]], markersize=12, markeredgewidth=2)
@@ -281,9 +280,9 @@ class MiniSom(object):
         plt.show()
 
     def plot3(self):
-        starting_weights = som.get_weights().copy()  # saving the starting weights
+        starting_weights = self.get_weights().copy()  # saving the starting weights
         print('quantization...')
-        qnt = som.quantization(pixels)  # quantize each pixels of the image
+        qnt = self.quantization(pixels)  # quantize each pixels of the image
         print('building new image...')
         clustered = np.zeros(img.shape)
         for i, q in enumerate(qnt):  # place the quantized values into a new image
@@ -304,22 +303,22 @@ class MiniSom(object):
         plt.imshow(starting_weights, interpolation='none')
         plt.subplot(224)
         plt.title('learned colors')
-        plt.imshow(som.get_weights(), interpolation='none')
+        plt.imshow(self.get_weights(), interpolation='none')
 
         plt.tight_layout()
         plt.show()
 
-    def plot4(self):
+    def plot4(self, dados):
         plt.figure(figsize=(7, 7))
         wmap = {}
         im = 0
-        for x, t in zip(data, num):  # scatterplot
-            w = som.winner(x)
+        for x, t in zip(dados, num):  # scatterplot
+            w = self.winner(x)
             wmap[w] = im
             plt. text(w[0]+.5,  w[1]+.5,  str(t),
                       color=plt.cm.Dark2(t / 4.), fontdict={'weight': 'bold',  'size': 11})
             im = im + 1
-        plt.axis([0, som.get_weights().shape[0], 0,  som.get_weights().shape[1]])
+        plt.axis([0, self.get_weights().shape[0], 0,  self.get_weights().shape[1]])
         plt.show()
 
     def plot5(self):
@@ -338,83 +337,7 @@ class MiniSom(object):
         plt.tight_layout()
         plt.show()
 
-class TestMinisom(unittest.TestCase):
-    def setup_method(self, method):
-        self.som = MiniSom(5, 5, 1)
-        for i in range(5):
-            for j in range(5):
-                # checking weights normalization
-                assert_almost_equal(1.0, linalg.norm(self.som._weights[i, j]))
-        self.som._weights = zeros((5, 5))  # fake weights
-        self.som._weights[2, 3] = 5.0
-        self.som._weights[1, 1] = 2.0
-
-    def test_decay_function(self):
-        assert self.som._decay_function(1., 2., 3.) == 1./(1.+2./3.)
-
-    def test_fast_norm(self):
-        assert fast_norm(array([1, 3])) == sqrt(1+9)
-
-    def test_unavailable_neigh_function(self):
-        with self.assertRaises(ValueError):
-            MiniSom(5, 5, 1, neighborhood_function='boooom')
-
-    def test_gaussian(self):
-        bell = self.som._gaussian((2, 2), 1)
-        assert bell.max() == 1.0
-        assert bell.argmax() == 12  # unravel(12) = (2,2)
-
-    def test_win_map(self):
-        winners = self.som.win_map([5.0, 2.0])
-        assert winners[(2, 3)][0] == 5.0
-        assert winners[(1, 1)][0] == 2.0
-
-    def test_activation_reponse(self):
-        response = self.som.activation_response([5.0, 2.0])
-        assert response[2, 3] == 1
-        assert response[1, 1] == 1
-
-    def test_activate(self):
-        assert self.som.activate(5.0).argmin() == 13.0  # unravel(13) = (2,3)
-
-    def test_quantization_error(self):
-        self.som.quantization_error([5, 2]) == 0.0
-        self.som.quantization_error([4, 1]) == 0.5
-
-    def test_quantization(self):
-        q = self.som.quantization(array([4, 2]))
-        assert q[0] == 5.0
-        assert q[1] == 2.0
-
-    def test_random_seed(self):
-        som1 = MiniSom(5, 5, 2, sigma=1.0, learning_rate=0.5, random_seed=1)
-        som2 = MiniSom(5, 5, 2, sigma=1.0, learning_rate=0.5, random_seed=1)
-        # same initialization
-        assert_array_almost_equal(som1._weights, som2._weights)
-        data = random.rand(100, 2)
-        som1 = MiniSom(5, 5, 2, sigma=1.0, learning_rate=0.5, random_seed=1)
-        som1.train_random(data, 10)
-        som2 = MiniSom(5, 5, 2, sigma=1.0, learning_rate=0.5, random_seed=1)
-        som2.train_random(data, 10)
-        # same state after training
-        assert_array_almost_equal(som1._weights, som2._weights)
-
-    def test_train_batch(self):
-        som = MiniSom(5, 5, 2, sigma=1.0, learning_rate=0.5, random_seed=1)
-        data = array([[4, 2], [3, 1]])
-        q1 = som.quantization_error(data)
-        som.train_batch(data, 10)
-        assert q1 > som.quantization_error(data)
-
-    def test_train_random(self):
-        som = MiniSom(5, 5, 2, sigma=1.0, learning_rate=0.5, random_seed=1)
-        data = array([[4, 2], [3, 1]])
-        q1 = som.quantization_error(data)
-        som.train_random(data, 10)
-        assert q1 > som.quantization_error(data)
-
-    def test_random_weights_init(self):
-        som = MiniSom(2, 2, 2, random_seed=1)
-        som.random_weights_init(array([[1.0, .0]]))
-        for w in som._weights:
-            assert_array_equal(w[0], array([1.0, .0]))
+    def plot6(self):
+        # Find frauds
+        mappings = self.win_map(X)
+        mappings

@@ -1,154 +1,14 @@
+# -*- coding: utf-8 -*-
 
-class KMeans():
-    """."""
+"""Implementação minimalista do self-organizing maps.
 
-    def __init__(self, points, type_of_kmeans='default'):
-        """Generate a KMeans model for a specific 'k' and a n-matrix of point.
-
-        It will return a model which represents the k-means cluster function
-        """
-        self.type_of_kmeans = type_of_kmeans
-        self.points = points
-        self.MediaDistAtual = 100000000000000000000.0
-        self.erro = 0.1
-        self.labels = []
-        self.lista_centroid_mais_proximos = None
-
-    def plots(self, type='points', save=True):
-        """."""
-        if type == 'points':
-            plt.scatter(self.points[:, 0], self.points[:, 1])
-            ax = plt.gca()
-            pca = PCA(n_components=2).fit(self.points)
-            dados2d = pca.transform(self.points)
-            print(str(len(dados2d)))
-            plt.scatter(dados2d[:,0], dados2d[:,1])
-            ax.add_artist(plt.Circle(np.array([1, 0]), 0.75/2, fill=False, lw=3))
-            ax.add_artist(plt.Circle(np.array([-0.5, 0.5]), 0.25/2, fill=False, lw=3))
-            ax.add_artist(plt.Circle(np.array([-0.5, -0.5]), 0.5/2, fill=False, lw=3))
-
-        if type == 'centroids':
-            plt.scatter(self.centroids[:, 0], self.centroids[:, 1], c='r', s=100)
-
-        if type == 'movement':
-            plt.subplot(121)
-            plt.scatter(self.points[:, 0], self.points[:, 1])
-            plt.scatter(self.centroids[:, 0], self.centroids[:, 1], c='r', s=100)
-
-            plt.subplot(122)
-            plt.scatter(self.points[:, 0], self.points[:, 1])
-            plt.scatter(self.centroids[:, 0], self.centroids[:, 1], c='r', s=100)
-
-        if type == 'movement2':
-            plt.subplot(121)
-            plt.scatter(self.points[:, 1], self.points[:, 2])
-            plt.scatter(self.centroids[:, 1], self.centroids[:, 2], c='r', s=100)
-
-            plt.subplot(122)
-            plt.scatter(self.points[:, 1], self.points[:, 2])
-            plt.scatter(self.centroids[:, 1], self.centroids[:, 2], c='r', s=100)
-
-        if type == 'movement3':
-            plt.subplot(121)
-            plt.scatter(self.points[:, 2], self.points[:, 3])
-            plt.scatter(self.centroids[:, 2], self.centroids[:, 3], c='r', s=100)
-
-            plt.subplot(122)
-            plt.scatter(self.points[:, 2], self.points[:, 3])
-            plt.scatter(self.centroids[:, 2], self.centroids[:, 3], c='r', s=100)
-
-        if save is False:
-            plt.show()
-        else:
-            print('Salvando resultados...')
-            plt.savefig('result_' + type + '.png')
-
-    def inicia_centroides(self, k_centroids):
-        """."""
-        centroids = self.points.copy()
-        np.random.shuffle(centroids)
-        self.centroids = centroids[:k_centroids]
-
-    def busca_centroides_mais_proximo(self):
-        """."""
-    	#É adicionado uma nova dimensão aos centroids de forma que seja possivel 
-    	#calcular as diferenças entre as coordenadas para todos os centroids de uma vez
-    	#Ex: 
-    	#Antes de ser redimensionado  :  centroids                = [[1,2,3][4,5,6][7,8,9]]
-    	#Depois de ser redimensionado :  centroids_redimensionado = [[[1,2,3],[4,5,6],[7,8,9]]]
-    	#dessa forma podemos obter as diferenças entre as cordenadas em uma unica operação:
-    	#supondo p1 seja um ponto : [0,1,2]
-    	#temos: centroids_redimensionado - p1 = [
-    	#					  [1,1,1], -> diferença das cordenadas do ponto 1 para o centroid 1
-    	#					  [4,4,4], -> diferença das cordenadas do ponto 1 para o centroid 2
-    	#					  [7,7,7]  -> diferença das cordenadas do ponto 1 para o centroid 3 
-    	#					]
-    	#
-        centroids_redimensionado = self.centroids[:, np.newaxis , :]
-    	#eleva-se a diferença ao quadrado 
-        diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
-    	#soma as diferenças e faz a raiz delas, obtendo as distancias euclidianas de todos os pontos para todos os centroids
-        distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
-    	#identifica o centroid mais próximo de cada ponto
-        centroid_mais_proximo = np.argmin(distancias, axis=0)
-    
-        return centroid_mais_proximo
-
-    def roda_kmeans(self, k_centroids):
-        """."""
-        self.inicia_centroides(k_centroids)
-        MediaDistAnterior = 0.0
-        nIteracoes = 0 
-       	while(abs(MediaDistAnterior- self.MediaDistAtual) > self.erro):
-            #Só executa se a lista de centroids não tiver sido determinada na ultima iteração
-            nIteracoes += 1
-            print("quantidade de iterações igual à " +str(nIteracoes))
-            if(self.lista_centroid_mais_proximos is None):
-                self.labels = self.busca_centroides_mais_proximo()
-                self.centroids = self.movimenta_centroides(self.labels)
-            else:
-                #movimenta os centroids  a partir da lista adquirida na ultima iteração
-                self.centroids = self.movimenta_centroides(self.lista_centroid_mais_proximos)
-            MediaDistAnterior = self.MediaDistAtual
-            #atualiza lista de centroids mais proximos e calcula a média da distancia entre os pontos e
-            #os centroids mais proximos
-            self.MediaDistAtual = self.calculaMediaDistancias(self.lista_centroid_mais_proximos)
-            
-            
-    def movimenta_centroides(self, closest):
-        """."""
-        return np.array([self.points[closest == k].mean(axis=0) for k in range(self.centroids.shape[0])])
-
-    def calculaMediaDistancias(self , centroid_mais_proximo):
-        
-        centroids_redimensionado = self.centroids[:, np.newaxis , :]
-        diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
-        distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
-        centroid_mais_proximo = np.argmin(distancias, axis=0)
-        
-        listaDistancias = [0.0]*len(self.centroids)
-        indexlista = 0
-        #soma todas as distâncias entre os pontos e os centroids mais próximos
-        for centroid in centroid_mais_proximo:
-            listaDistancias[centroid] += distancias[centroid][indexlista]
-            indexlista += 1
-        #tira a média da distância entre os pontos e os centroids 
-        for indice in range(0 , len(listaDistancias)):
-            listaDistancias[indice] = listaDistancias[indice]/sum(centroid_mais_proximo == indice)
-        return sum(listaDistancias)
-"""."""
+Fonte: https://github.com/JustGlowing/minisom
+"""
 
 from math import sqrt
-
-from numpy import (array, unravel_index, nditer, linalg, random, subtract,
-                   power, exp, pi, zeros, arange, outer, meshgrid, dot)
+from numpy import (array, unravel_index, nditer, linalg, random, subtract, power, exp, pi, zeros, arange, outer, meshgrid, dot)
 from collections import defaultdict
 from warnings import warn
-
-# for unit tests
-from numpy.testing import assert_almost_equal, assert_array_almost_equal
-from numpy.testing import assert_array_equal
-import unittest
 
 """
     Minimalistic implementation of the Self Organizing Maps (SOM).
@@ -160,6 +20,7 @@ def fast_norm(x):
 
     * faster than linalg.norm in case of 1-D arrays (numpy 1.9.2rc1).
     """
+    # Retorna a normalização da matrix. Ref: https://en.wiktionary.org/wiki/two-norm
     return sqrt(dot(x, x.T))
 
 
@@ -319,7 +180,7 @@ class MiniSom(object):
         """Trains the SOM picking samples at random from data"""
         self._init_T(num_iteration)
         for iteration in range(num_iteration):
-            print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
+            # print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
             # pick a random sample
             rand_i = self._random_generator.randint(len(data))
             self.update(data[rand_i], self.winner(data[rand_i]), iteration)
@@ -329,7 +190,7 @@ class MiniSom(object):
         self._init_T(len(data)*num_iteration)
         iteration = 0
         while iteration < num_iteration:
-            print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
+            # print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
             idx = iteration % (len(data)-1)
             self.update(data[idx], self.winner(data[idx]), iteration)
             iteration += 1
@@ -384,87 +245,102 @@ class MiniSom(object):
             winmap[self.winner(x)].append(x)
         return winmap
 
+    def plot(self, dados):
+        author_to_color = {0: 'chocolate', 1: 'steelblue', 2: 'dimgray'}
+        color = [author_to_color[yy] for yy in y]
+        plt.figure(figsize=(14, 14))
+        for i, (t, c, vec) in enumerate(zip(titles, color, dados)):
+            winnin_position = winner(vec)
+            plt.text(winnin_position[0],
+                     winnin_position[1]+np.random.rand()*.9,
+                     t,
+                     color=c)
 
-class TestMinisom(unittest.TestCase):
-    def setup_method(self, method):
-        self.som = MiniSom(5, 5, 1)
-        for i in range(5):
-            for j in range(5):
-                # checking weights normalization
-                assert_almost_equal(1.0, linalg.norm(self.som._weights[i, j]))
-        self.som._weights = zeros((5, 5))  # fake weights
-        self.som._weights[2, 3] = 5.0
-        self.som._weights[1, 1] = 2.0
+        plt.xticks(range(map_dim))
+        plt.yticks(range(map_dim))
+        plt.grid()
+        plt.xlim([0, map_dim])
+        plt.ylim([0, map_dim])
+        plt.plot()
 
-    def test_decay_function(self):
-        assert self.som._decay_function(1., 2., 3.) == 1./(1.+2./3.)
+    def plot2(self, dados):
+        # Plotting the response for each pattern in the iris dataset
+        plt.bone()
+        plt.pcolor(self.distance_map().T)  # plotting the distance map as background
+        plt.colorbar()
 
-    def test_fast_norm(self):
-        assert fast_norm(array([1, 3])) == sqrt(1+9)
+        markers = ['o', 's', 'D']
+        colors = ['r', 'g', 'b']
+        for cnt, xx in enumerate(dados):
+            w = self.winner(xx)  # getting the winner
+            # palce a marker on the winning position for the sample xx
+            plt.plot(w[0]+.5, w[1]+.5, markers[t[cnt]], markerfacecolor='None',
+                     markeredgecolor=colors[t[cnt]], markersize=12, markeredgewidth=2)
+        plt.axis([0, 7, 0, 7])
+        plt.show()
 
-    def test_unavailable_neigh_function(self):
-        with self.assertRaises(ValueError):
-            MiniSom(5, 5, 1, neighborhood_function='boooom')
+    def plot3(self):
+        starting_weights = self.get_weights().copy()  # saving the starting weights
+        print('quantization...')
+        qnt = self.quantization(pixels)  # quantize each pixels of the image
+        print('building new image...')
+        clustered = np.zeros(img.shape)
+        for i, q in enumerate(qnt):  # place the quantized values into a new image
+            clustered[np.unravel_index(i, dims=(img.shape[0], img.shape[1]))] = q
+        print('done.')
 
-    def test_gaussian(self):
-        bell = self.som._gaussian((2, 2), 1)
-        assert bell.max() == 1.0
-        assert bell.argmax() == 12  # unravel(12) = (2,2)
+        # show the result
+        plt.figure(1)
+        plt.subplot(221)
+        plt.title('original')
+        plt.imshow(img)
+        plt.subplot(222)
+        plt.title('result')
+        plt.imshow(clustered)
 
-    def test_win_map(self):
-        winners = self.som.win_map([5.0, 2.0])
-        assert winners[(2, 3)][0] == 5.0
-        assert winners[(1, 1)][0] == 2.0
+        plt.subplot(223)
+        plt.title('initial colors')
+        plt.imshow(starting_weights, interpolation='none')
+        plt.subplot(224)
+        plt.title('learned colors')
+        plt.imshow(self.get_weights(), interpolation='none')
 
-    def test_activation_reponse(self):
-        response = self.som.activation_response([5.0, 2.0])
-        assert response[2, 3] == 1
-        assert response[1, 1] == 1
+        plt.tight_layout()
+        plt.show()
 
-    def test_activate(self):
-        assert self.som.activate(5.0).argmin() == 13.0  # unravel(13) = (2,3)
+    def plot4(self, dados):
+        plt.figure(figsize=(7, 7))
+        wmap = {}
+        im = 0
+        for x, t in zip(dados, num):  # scatterplot
+            w = self.winner(x)
+            wmap[w] = im
+            plt. text(w[0]+.5,  w[1]+.5,  str(t),
+                      color=plt.cm.Dark2(t / 4.), fontdict={'weight': 'bold',  'size': 11})
+            im = im + 1
+        plt.axis([0, self.get_weights().shape[0], 0,  self.get_weights().shape[1]])
+        plt.show()
 
-    def test_quantization_error(self):
-        self.som.quantization_error([5, 2]) == 0.0
-        self.som.quantization_error([4, 1]) == 0.5
+    def plot5(self):
+        plt.figure(figsize=(10, 10), facecolor='white')
+        cnt = 0
+        for j in reversed(range(20)):  # images mosaic
+            for i in range(20):
+                plt.subplot(20, 20, cnt+1, frameon=False,  xticks=[],  yticks=[])
+                if (i, j) in wmap:
+                    plt.imshow(digits.images[wmap[(i, j)]],
+                               cmap='Greys', interpolation='nearest')
+                else:
+                    plt.imshow(np.zeros((8, 8)),  cmap='Greys')
+                cnt = cnt + 1
 
-    def test_quantization(self):
-        q = self.som.quantization(array([4, 2]))
-        assert q[0] == 5.0
-        assert q[1] == 2.0
+        plt.tight_layout()
+        plt.show()
 
-    def test_random_seed(self):
-        som1 = MiniSom(5, 5, 2, sigma=1.0, learning_rate=0.5, random_seed=1)
-        som2 = MiniSom(5, 5, 2, sigma=1.0, learning_rate=0.5, random_seed=1)
-        # same initialization
-        assert_array_almost_equal(som1._weights, som2._weights)
-        data = random.rand(100, 2)
-        som1 = MiniSom(5, 5, 2, sigma=1.0, learning_rate=0.5, random_seed=1)
-        som1.train_random(data, 10)
-        som2 = MiniSom(5, 5, 2, sigma=1.0, learning_rate=0.5, random_seed=1)
-        som2.train_random(data, 10)
-        # same state after training
-        assert_array_almost_equal(som1._weights, som2._weights)
-
-    def test_train_batch(self):
-        som = MiniSom(5, 5, 2, sigma=1.0, learning_rate=0.5, random_seed=1)
-        data = array([[4, 2], [3, 1]])
-        q1 = som.quantization_error(data)
-        som.train_batch(data, 10)
-        assert q1 > som.quantization_error(data)
-
-    def test_train_random(self):
-        som = MiniSom(5, 5, 2, sigma=1.0, learning_rate=0.5, random_seed=1)
-        data = array([[4, 2], [3, 1]])
-        q1 = som.quantization_error(data)
-        som.train_random(data, 10)
-        assert q1 > som.quantization_error(data)
-
-    def test_random_weights_init(self):
-        som = MiniSom(2, 2, 2, random_seed=1)
-        som.random_weights_init(array([[1.0, .0]]))
-        for w in som._weights:
-            assert_array_equal(w[0], array([1.0, .0]))
+    def plot6(self):
+        # Find frauds
+        mappings = self.win_map(X)
+        mappings
 """."""
 # -*- coding: utf-8 -*-
 
@@ -481,9 +357,10 @@ class TransformMatrix():
 		# Cria matrix
 		self._matrix_creation()
 
-	def _matrix_creation(self):
+	def _matrix_creation(self, n_gram=(1, 1)):
 		# Iremos criar uma "vetorizacao" baseado em frequencia (count)
-		vectorizer = CountVectorizer(max_df=0.9, min_df=0.05)
+		stop_words = set(stopwords.words('english'))
+		vectorizer = CountVectorizer(max_df=0.9, min_df=0.05, stop_words=stop_words, ngram_range=n_gram)
 		# vectorizer = CountVectorizer()
 
 		#Retorna array TF de cada palavra
@@ -596,7 +473,143 @@ class ProcessTexts():
             # new_tokens.append((' '.join(token)).replace('  ', ' '))
             new_tokens.append(' '.join(token))
         self.tokens = new_tokens
-# -*- coding: utf-8 -*-
+
+class KMeans():
+    """."""
+
+    def __init__(self, points, type_of_kmeans='default'):
+        """Generate a KMeans model for a specific 'k' and a n-matrix of point.
+        It will return a model which represents the k-means cluster function
+        """
+        self.type_of_kmeans = type_of_kmeans
+        self.points = points
+        self.MediaDistAtual = 100000000000000000000.0
+        self.erro = 0.1
+        self.labels = []
+        self.lista_centroid_mais_proximos = None
+
+    def plots(self, type='points', save=True):
+        """."""
+        if type == 'points':
+            plt.scatter(self.points[:, 0], self.points[:, 1])
+            ax = plt.gca()
+            pca = PCA(n_components=2).fit(self.points)
+            dados2d = pca.transform(self.points)
+            print(str(len(dados2d)))
+            plt.scatter(dados2d[:,0], dados2d[:,1])
+            ax.add_artist(plt.Circle(np.array([1, 0]), 0.75/2, fill=False, lw=3))
+            ax.add_artist(plt.Circle(np.array([-0.5, 0.5]), 0.25/2, fill=False, lw=3))
+            ax.add_artist(plt.Circle(np.array([-0.5, -0.5]), 0.5/2, fill=False, lw=3))
+
+        if type == 'centroids':
+            plt.scatter(self.centroids[:, 0], self.centroids[:, 1], c='r', s=100)
+
+        if type == 'movement':
+            plt.subplot(121)
+            plt.scatter(self.points[:, 0], self.points[:, 1])
+            plt.scatter(self.centroids[:, 0], self.centroids[:, 1], c='r', s=100)
+
+            plt.subplot(122)
+            plt.scatter(self.points[:, 0], self.points[:, 1])
+            plt.scatter(self.centroids[:, 0], self.centroids[:, 1], c='r', s=100)
+
+        if type == 'movement2':
+            plt.subplot(121)
+            plt.scatter(self.points[:, 1], self.points[:, 2])
+            plt.scatter(self.centroids[:, 1], self.centroids[:, 2], c='r', s=100)
+
+            plt.subplot(122)
+            plt.scatter(self.points[:, 1], self.points[:, 2])
+            plt.scatter(self.centroids[:, 1], self.centroids[:, 2], c='r', s=100)
+
+        if type == 'movement3':
+            plt.subplot(121)
+            plt.scatter(self.points[:, 2], self.points[:, 3])
+            plt.scatter(self.centroids[:, 2], self.centroids[:, 3], c='r', s=100)
+
+            plt.subplot(122)
+            plt.scatter(self.points[:, 2], self.points[:, 3])
+            plt.scatter(self.centroids[:, 2], self.centroids[:, 3], c='r', s=100)
+
+        if save is False:
+            plt.show()
+        else:
+            print('Salvando resultados...')
+            plt.savefig('result_' + type + '.png')
+
+    def inicia_centroides(self, k_centroids):
+        """."""
+        centroids = self.points.copy()
+        np.random.shuffle(centroids)
+        self.centroids = centroids[:k_centroids]
+
+    def busca_centroides_mais_proximo(self):
+        """."""
+        #É adicionado uma nova dimensão aos centroids de forma que seja possivel 
+        #calcular as diferenças entre as coordenadas para todos os centroids de uma vez
+        #Ex: 
+        #Antes de ser redimensionado  :  centroids                = [[1,2,3][4,5,6][7,8,9]]
+        #Depois de ser redimensionado :  centroids_redimensionado = [[[1,2,3],[4,5,6],[7,8,9]]]
+        #dessa forma podemos obter as diferenças entre as cordenadas em uma unica operação:
+        #supondo p1 seja um ponto : [0,1,2]
+        #temos: centroids_redimensionado - p1 = [
+        #                     [1,1,1], -> diferença das cordenadas do ponto 1 para o centroid 1
+        #                     [4,4,4], -> diferença das cordenadas do ponto 1 para o centroid 2
+        #                     [7,7,7]  -> diferença das cordenadas do ponto 1 para o centroid 3 
+        #                   ]
+        #
+        centroids_redimensionado = self.centroids[:, np.newaxis , :]
+        #eleva-se a diferença ao quadrado 
+        diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
+        #soma as diferenças e faz a raiz delas, obtendo as distancias euclidianas de todos os pontos para todos os centroids
+        distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
+        #identifica o centroid mais próximo de cada ponto
+        centroid_mais_proximo = np.argmin(distancias, axis=0)
+    
+        return centroid_mais_proximo
+
+    def roda_kmeans(self, k_centroids):
+        """."""
+        self.inicia_centroides(k_centroids)
+        MediaDistAnterior = 0.0
+        nIteracoes = 0 
+        while(abs(MediaDistAnterior- self.MediaDistAtual) > self.erro):
+            #Só executa se a lista de centroids não tiver sido determinada na ultima iteração
+            nIteracoes += 1
+            print("quantidade de iterações igual à " +str(nIteracoes))
+            if(self.lista_centroid_mais_proximos is None):
+                self.labels = self.busca_centroides_mais_proximo()
+                self.centroids = self.movimenta_centroides(self.labels)
+            else:
+                #movimenta os centroids  a partir da lista adquirida na ultima iteração
+                self.centroids = self.movimenta_centroides(self.lista_centroid_mais_proximos)
+            MediaDistAnterior = self.MediaDistAtual
+            #atualiza lista de centroids mais proximos e calcula a média da distancia entre os pontos e
+            #os centroids mais proximos
+            self.MediaDistAtual = self.calculaMediaDistancias(self.lista_centroid_mais_proximos)
+            
+            
+    def movimenta_centroides(self, closest):
+        """."""
+        return np.array([self.points[closest == k].mean(axis=0) for k in range(self.centroids.shape[0])])
+
+    def calculaMediaDistancias(self , centroid_mais_proximo):
+        
+        centroids_redimensionado = self.centroids[:, np.newaxis , :]
+        diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
+        distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
+        centroid_mais_proximo = np.argmin(distancias, axis=0)
+        
+        listaDistancias = [0.0]*len(self.centroids)
+        indexlista = 0
+        #soma todas as distâncias entre os pontos e os centroids mais próximos
+        for centroid in centroid_mais_proximo:
+            listaDistancias[centroid] += distancias[centroid][indexlista]
+            indexlista += 1
+        #tira a média da distância entre os pontos e os centroids 
+        for indice in range(0 , len(listaDistancias)):
+            listaDistancias[indice] = listaDistancias[indice]/sum(centroid_mais_proximo == indice)
+        return sum(listaDistancias)# -*- coding: utf-8 -*-
 
 # Ativar qd rodar localmente
 # import ProcessTexts as preprocessor
@@ -636,21 +649,30 @@ if __name__ == "__main__":
 		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
 		kmeans = KMeans(dados)
 		# kmeans.plots()
-		kmeans.roda_kmeans(5)
-		kmeans.plots(type='movement')
-		kmeans.plots(type='movement2')
-		kmeans.plots(type='movement3')
-		kmeans.plots(type='points')
+		# kmeans.roda_kmeans(5)
+		# kmeans.plots(type='movement')
+		# kmeans.plots(type='movement2')
+		# kmeans.plots(type='movement3')
+		# kmeans.plots(type='points')
 
-		# print('----- Iniciando Processamento SOM -----')
+		print('----- Iniciando Processamento SOM -----')
 		# Implementação usando MiniSOM + kaggle
-		# map_dim = 16
-		# som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
+		map_dim = 20
+		som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
 		# print('Shape' + str(dados.shape))
-		# som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
-		# som.random_weights_init(dados)
-		#som.random_weights_init(W)
-		# som.train_batch(dados, 10000)
+		som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
+		som.random_weights_init(dados)
+		som.train_batch(dados, 10000)
+		print('-- Activation Response --')
+		print(som.activation_response(dados))
+		print('-- Quantization Error --')
+		print(som.quantization_error(dados))
+		print('-- Win Map --')
+		print(som.win_map(dados))
+		som.plot2(dados)
+		som.plot3()
+		# som.plot4()
+		som.plot5()
 
 	else:
 		preprocessor = ProcessTexts(texts=['bbc_local'])
@@ -676,8 +698,8 @@ if __name__ == "__main__":
 	[X] - Matrix binaria
 	[X] - Matrix tf
 	[X] - Matrix tf_idf
-	[] - Ngrams
-	[] - Rodar K-means para cada matrix
-	[] - Rodar SOM para cada matrix
+	[X] - Ngrams
+	[X] - Rodar K-means para cada matrix
+	[X] - Rodar SOM para cada matrix
 	[] - Pos-processamento
 """

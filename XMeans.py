@@ -19,7 +19,7 @@ class Xmeans():
 
         for iter in range(n_iteracoes):
 
-            bool nothing_changed = True
+            nothing_changed = True
             for i in range(self.num_centroids):
                 points_per_centroid = get_centroid_points(i)
                 my_labels = [i for j in range(len(points_per_centroid))]
@@ -29,7 +29,7 @@ class Xmeans():
 
                 # Guarda o centróide pai em outra variável
                 father_centroid = self.centroids[i].pop()
-                
+
                 # O número representa quanto do range dos pontos será utilizado
                 new_centroids = self.get_two_new_centroids(0.9, father_centroid)
                 self.roda_kmeans(kmeans_centroids = new_centroids, kmeans_points = points_per_centroid)
@@ -40,7 +40,7 @@ class Xmeans():
                 if bic_children > bic_pai:
                     nothing_changed = False
                     # Coloca centróides filhos no self.centroids
-                
+
             if nothing_changed == True:
                 return
 
@@ -102,7 +102,7 @@ class Xmeans():
 
             one_centroid.append(father_centroid[i] - range_divided)
             two_centroid.append(father_centroid[i] + range_divided)
-        
+
         return [one_centroid, two_centroid]
 
     # Método para avaliação dos modelos de centróides
