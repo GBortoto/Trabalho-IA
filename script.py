@@ -175,6 +175,7 @@ class MiniSom(object):
             norm = fast_norm(self._weights[it.multi_index])
             self._weights[it.multi_index] = self._weights[it.multi_index]/norm
             it.iternext()
+        self.starting_weights = self.get_weights().copy()
 
     def train_random(self, data, num_iteration):
         """Trains the SOM picking samples at random from data"""
@@ -268,45 +269,16 @@ class MiniSom(object):
         plt.bone()
         plt.pcolor(self.distance_map().T)  # plotting the distance map as background
         plt.colorbar()
-
+        t = np.zeros(len(dados), dtype=int)
         markers = ['o', 's', 'D']
         colors = ['r', 'g', 'b']
         for cnt, xx in enumerate(dados):
             w = self.winner(xx)  # getting the winner
             # palce a marker on the winning position for the sample xx
-            plt.plot(w[0]+.5, w[1]+.5, markers[t[cnt]], markerfacecolor='None',
-                     markeredgecolor=colors[t[cnt]], markersize=12, markeredgewidth=2)
+            plt.plot(w[0]+.5, w[1]+.5, markers[t[cnt]], markerfacecolor='None', markeredgecolor=colors[t[cnt]], markersize=12, markeredgewidth=2)
         plt.axis([0, 7, 0, 7])
-        plt.show()
-
-    def plot3(self):
-        starting_weights = self.get_weights().copy()  # saving the starting weights
-        print('quantization...')
-        qnt = self.quantization(pixels)  # quantize each pixels of the image
-        print('building new image...')
-        clustered = np.zeros(img.shape)
-        for i, q in enumerate(qnt):  # place the quantized values into a new image
-            clustered[np.unravel_index(i, dims=(img.shape[0], img.shape[1]))] = q
-        print('done.')
-
-        # show the result
-        plt.figure(1)
-        plt.subplot(221)
-        plt.title('original')
-        plt.imshow(img)
-        plt.subplot(222)
-        plt.title('result')
-        plt.imshow(clustered)
-
-        plt.subplot(223)
-        plt.title('initial colors')
-        plt.imshow(starting_weights, interpolation='none')
-        plt.subplot(224)
-        plt.title('learned colors')
-        plt.imshow(self.get_weights(), interpolation='none')
-
-        plt.tight_layout()
-        plt.show()
+        # plt.show()
+        plt.savefig('temp.png')
 
     def plot4(self, dados):
         plt.figure(figsize=(7, 7))
@@ -321,7 +293,6 @@ class MiniSom(object):
         plt.axis([0, self.get_weights().shape[0], 0,  self.get_weights().shape[1]])
         plt.show()
 
-    def plot5(self):
         plt.figure(figsize=(10, 10), facecolor='white')
         cnt = 0
         for j in reversed(range(20)):  # images mosaic
@@ -622,10 +593,6 @@ import os
 import string
 import tensorflow as tf
 import matplotlib.pyplot as plt
-
-# Ativar para rodar SOM local
-# import sompy as sompy
-
 from sklearn.cluster import KMeans as KMeansDefault
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -645,34 +612,23 @@ if __name__ == "__main__":
 		print('----- Resultados do bag of words -----')
 		dados = matrix.get_matrix(type='tf-idf')
 
-
-		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
+		# ---------------------
+		# K-means
+		print('----- Iniciando Processamento K-means -----')
 		kmeans = KMeans(dados)
-		# kmeans.plots()
-		# kmeans.roda_kmeans(5)
-		# kmeans.plots(type='movement')
-		# kmeans.plots(type='movement2')
-		# kmeans.plots(type='movement3')
-		# kmeans.plots(type='points')
 
+		# ---------------------
+		# SOM
 		print('----- Iniciando Processamento SOM -----')
-		# Implementação usando MiniSOM + kaggle
 		map_dim = 20
-		som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
-		# print('Shape' + str(dados.shape))
 		som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
 		som.random_weights_init(dados)
 		som.train_batch(dados, 10000)
-		print('-- Activation Response --')
-		print(som.activation_response(dados))
-		print('-- Quantization Error --')
-		print(som.quantization_error(dados))
-		print('-- Win Map --')
-		print(som.win_map(dados))
+		# print(som.activation_response(dados))
+		# print(som.quantization_error(dados))
+		# print(som.win_map(dados))
+		# print(som.distance_map(dados))
 		som.plot2(dados)
-		som.plot3()
-		# som.plot4()
-		som.plot5()
 
 	else:
 		preprocessor = ProcessTexts(texts=['bbc_local'])
@@ -680,26 +636,3 @@ if __name__ == "__main__":
 		matrix = TransformMatrix(preprocessor.tokens)
 		print('----- Resultados do bag of words -----')
 		data = matrix.get_matrix(type='tf-idf')
-		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
-		kmeans = KMeans(data)
-		# kmeans.plots()
-		# kmeans.roda_kmeans(5)
-		# kmeans.plots(type='movement')
-
-		# Implementação local do SOM
-		# som = SomDefault(data)
-
-
-"""
-	[X] - Ler todos os textos
-	[X] - Fazer data clean dos dados
-	[X] - Roda Bag of Words para transformar lista de textos em vetor bidimensional de frequencia de palavra por texto
-	[X] - Criar 3 outputs do Bag of Words
-	[X] - Matrix binaria
-	[X] - Matrix tf
-	[X] - Matrix tf_idf
-	[X] - Ngrams
-	[X] - Rodar K-means para cada matrix
-	[X] - Rodar SOM para cada matrix
-	[] - Pos-processamento
-"""

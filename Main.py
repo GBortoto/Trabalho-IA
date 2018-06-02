@@ -11,10 +11,6 @@ import os
 import string
 import tensorflow as tf
 import matplotlib.pyplot as plt
-
-# Ativar para rodar SOM local
-# import sompy as sompy
-
 from sklearn.cluster import KMeans as KMeansDefault
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -34,34 +30,23 @@ if __name__ == "__main__":
 		print('----- Resultados do bag of words -----')
 		dados = matrix.get_matrix(type='tf-idf')
 
-
-		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
+		# ---------------------
+		# K-means
+		print('----- Iniciando Processamento K-means -----')
 		kmeans = KMeans(dados)
-		# kmeans.plots()
-		# kmeans.roda_kmeans(5)
-		# kmeans.plots(type='movement')
-		# kmeans.plots(type='movement2')
-		# kmeans.plots(type='movement3')
-		# kmeans.plots(type='points')
 
+		# ---------------------
+		# SOM
 		print('----- Iniciando Processamento SOM -----')
-		# Implementação usando MiniSOM + kaggle
 		map_dim = 20
-		som = MiniSom(map_dim, map_dim, 50, sigma=1.0, random_seed=1)
-		# print('Shape' + str(dados.shape))
 		som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
 		som.random_weights_init(dados)
 		som.train_batch(dados, 10000)
-		print('-- Activation Response --')
-		print(som.activation_response(dados))
-		print('-- Quantization Error --')
-		print(som.quantization_error(dados))
-		print('-- Win Map --')
-		print(som.win_map(dados))
+		# print(som.activation_response(dados))
+		# print(som.quantization_error(dados))
+		# print(som.win_map(dados))
+		# print(som.distance_map(dados))
 		som.plot2(dados)
-		som.plot3()
-		# som.plot4()
-		som.plot5()
 
 	else:
 		preprocessor = ProcessTexts(texts=['bbc_local'])
@@ -69,26 +54,3 @@ if __name__ == "__main__":
 		matrix = TransformMatrix(preprocessor.tokens)
 		print('----- Resultados do bag of words -----')
 		data = matrix.get_matrix(type='tf-idf')
-		# kmeans = kmeans_default.KMeansDefault(matrix.get_matrix(type='tf-n'))
-		kmeans = KMeans(data)
-		# kmeans.plots()
-		# kmeans.roda_kmeans(5)
-		# kmeans.plots(type='movement')
-
-		# Implementação local do SOM
-		# som = SomDefault(data)
-
-
-"""
-	[X] - Ler todos os textos
-	[X] - Fazer data clean dos dados
-	[X] - Roda Bag of Words para transformar lista de textos em vetor bidimensional de frequencia de palavra por texto
-	[X] - Criar 3 outputs do Bag of Words
-	[X] - Matrix binaria
-	[X] - Matrix tf
-	[X] - Matrix tf_idf
-	[X] - Ngrams
-	[X] - Rodar K-means para cada matrix
-	[X] - Rodar SOM para cada matrix
-	[] - Pos-processamento
-"""

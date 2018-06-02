@@ -175,6 +175,7 @@ class MiniSom(object):
             norm = fast_norm(self._weights[it.multi_index])
             self._weights[it.multi_index] = self._weights[it.multi_index]/norm
             it.iternext()
+        self.starting_weights = self.get_weights().copy()
 
     def train_random(self, data, num_iteration):
         """Trains the SOM picking samples at random from data"""
@@ -268,45 +269,16 @@ class MiniSom(object):
         plt.bone()
         plt.pcolor(self.distance_map().T)  # plotting the distance map as background
         plt.colorbar()
-
+        t = np.zeros(len(dados), dtype=int)
         markers = ['o', 's', 'D']
         colors = ['r', 'g', 'b']
         for cnt, xx in enumerate(dados):
             w = self.winner(xx)  # getting the winner
             # palce a marker on the winning position for the sample xx
-            plt.plot(w[0]+.5, w[1]+.5, markers[t[cnt]], markerfacecolor='None',
-                     markeredgecolor=colors[t[cnt]], markersize=12, markeredgewidth=2)
+            plt.plot(w[0]+.5, w[1]+.5, markers[t[cnt]], markerfacecolor='None', markeredgecolor=colors[t[cnt]], markersize=12, markeredgewidth=2)
         plt.axis([0, 7, 0, 7])
-        plt.show()
-
-    def plot3(self):
-        starting_weights = self.get_weights().copy()  # saving the starting weights
-        print('quantization...')
-        qnt = self.quantization(pixels)  # quantize each pixels of the image
-        print('building new image...')
-        clustered = np.zeros(img.shape)
-        for i, q in enumerate(qnt):  # place the quantized values into a new image
-            clustered[np.unravel_index(i, dims=(img.shape[0], img.shape[1]))] = q
-        print('done.')
-
-        # show the result
-        plt.figure(1)
-        plt.subplot(221)
-        plt.title('original')
-        plt.imshow(img)
-        plt.subplot(222)
-        plt.title('result')
-        plt.imshow(clustered)
-
-        plt.subplot(223)
-        plt.title('initial colors')
-        plt.imshow(starting_weights, interpolation='none')
-        plt.subplot(224)
-        plt.title('learned colors')
-        plt.imshow(self.get_weights(), interpolation='none')
-
-        plt.tight_layout()
-        plt.show()
+        # plt.show()
+        plt.savefig('temp.png')
 
     def plot4(self, dados):
         plt.figure(figsize=(7, 7))
@@ -321,7 +293,6 @@ class MiniSom(object):
         plt.axis([0, self.get_weights().shape[0], 0,  self.get_weights().shape[1]])
         plt.show()
 
-    def plot5(self):
         plt.figure(figsize=(10, 10), facecolor='white')
         cnt = 0
         for j in reversed(range(20)):  # images mosaic
