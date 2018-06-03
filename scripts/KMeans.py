@@ -70,9 +70,9 @@ class KMeans():
 
     def busca_centroides_mais_proximo(self):
         """."""
-        #É adicionado uma nova dimensão aos centroids de forma que seja possivel 
+        #É adicionado uma nova dimensão aos centroids de forma que seja possivel
         #calcular as diferenças entre as coordenadas para todos os centroids de uma vez
-        #Ex: 
+        #Ex:
         #Antes de ser redimensionado  :  centroids                = [[1,2,3][4,5,6][7,8,9]]
         #Depois de ser redimensionado :  centroids_redimensionado = [[[1,2,3],[4,5,6],[7,8,9]]]
         #dessa forma podemos obter as diferenças entre as cordenadas em uma unica operação:
@@ -80,24 +80,24 @@ class KMeans():
         #temos: centroids_redimensionado - p1 = [
         #                     [1,1,1], -> diferença das cordenadas do ponto 1 para o centroid 1
         #                     [4,4,4], -> diferença das cordenadas do ponto 1 para o centroid 2
-        #                     [7,7,7]  -> diferença das cordenadas do ponto 1 para o centroid 3 
+        #                     [7,7,7]  -> diferença das cordenadas do ponto 1 para o centroid 3
         #                   ]
         #
         centroids_redimensionado = self.centroids[:, np.newaxis , :]
-        #eleva-se a diferença ao quadrado 
+        #eleva-se a diferença ao quadrado
         diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
         #soma as diferenças e faz a raiz delas, obtendo as distancias euclidianas de todos os pontos para todos os centroids
         distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
         #identifica o centroid mais próximo de cada ponto
         centroid_mais_proximo = np.argmin(distancias, axis=0)
-    
+
         return centroid_mais_proximo
 
     def roda_kmeans(self, k_centroids):
         """."""
         self.inicia_centroides(k_centroids)
         MediaDistAnterior = 0.0
-        nIteracoes = 0 
+        nIteracoes = 0
         while(abs(MediaDistAnterior- self.MediaDistAtual) > self.erro):
             #Só executa se a lista de centroids não tiver sido determinada na ultima iteração
             nIteracoes += 1
@@ -112,26 +112,26 @@ class KMeans():
             #atualiza lista de centroids mais proximos e calcula a média da distancia entre os pontos e
             #os centroids mais proximos
             self.MediaDistAtual = self.calculaMediaDistancias(self.lista_centroid_mais_proximos)
-            
-            
+
+
     def movimenta_centroides(self, closest):
         """."""
         return np.array([self.points[closest == k].mean(axis=0) for k in range(self.centroids.shape[0])])
 
     def calculaMediaDistancias(self , centroid_mais_proximo):
-        
+
         centroids_redimensionado = self.centroids[:, np.newaxis , :]
         diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
         distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
         centroid_mais_proximo = np.argmin(distancias, axis=0)
-        
+
         listaDistancias = [0.0]*len(self.centroids)
         indexlista = 0
         #soma todas as distâncias entre os pontos e os centroids mais próximos
         for centroid in centroid_mais_proximo:
             listaDistancias[centroid] += distancias[centroid][indexlista]
             indexlista += 1
-        #tira a média da distância entre os pontos e os centroids 
+        #tira a média da distância entre os pontos e os centroids
         for indice in range(0 , len(listaDistancias)):
             listaDistancias[indice] = listaDistancias[indice]/sum(centroid_mais_proximo == indice)
         return sum(listaDistancias)

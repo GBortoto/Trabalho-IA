@@ -1,3 +1,5 @@
+"""."""
+
 # -*- coding: utf-8 -*-
 
 # Author: Vahid Moosavi (sevamoo@gmail.com)
@@ -12,9 +14,7 @@ import tempfile
 import os
 import itertools
 import logging
-
 import numpy as np
-
 from time import time
 from multiprocessing.dummy import Pool
 from multiprocessing import cpu_count
@@ -23,128 +23,82 @@ from sklearn import neighbors
 from sklearn.externals.joblib import Parallel, delayed, load, dump
 import sys
 
-# from .decorators import timeit
-# from .codebook import Codebook
-# from .neighborhood import NeighborhoodFactory
-# from .normalization import NormalizatorFactory
-
-#lbugnon
-#import ipdb
-# import sompy
-#
 
 class ComponentNamesError(Exception):
+    """."""
+
     pass
 
 
 class LabelsError(Exception):
+    """."""
+
     pass
 
 
 class SOMFactory(object):
+    """."""
 
     @staticmethod
-    def build(data,
-              mapsize=None,
-              mask=None,
-              mapshape='planar',
-              lattice='rect',
-              normalization='var',
-              initialization='pca',
-              neighborhood='gaussian',
-              training='batch',
-              name='sompy',
-              component_names=None):
-        """
-        :param data: data to be clustered, represented as a matrix of n rows,
-            as inputs and m cols as input features
-        :param neighborhood: neighborhood object calculator.  Options are:
-            - gaussian
-            - bubble
-            - manhattan (not implemented yet)
-            - cut_gaussian (not implemented yet)
-            - epanechicov (not implemented yet)
+    def build(data, mapsize=None, mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='pca', neighborhood='gaussian', training='batch', name='sompy', component_names=None):
+        """Fabrica de SOM.
 
-        :param normalization: normalizer object calculator. Options are:
-            - var
-
-        :param mapsize: tuple/list defining the dimensions of the som.
-            If single number is provided is considered as the number of nodes.
+        :param data: dados que precisam ser clusterizados, representados por uma matriz n x m
+        :param mapsize: lista que define o numero de n linhas e m colunas da parametro data
         :param mask: mask
-        :param mapshape: shape of the som. Options are:
-            - planar
-            - toroid (not implemented yet)
-            - cylinder (not implemented yet)
-
-        :param lattice: type of lattice. Options are:
-            - rect
-            - hexa (not implemented yet)
-
-        :param initialization: method to be used for initialization of the som.
-            Options are:
-            - pca
-            - random
-
-        :param name: name used to identify the som
-        :param training: Training mode (seq, batch)
+        :param mapshape: formato planar do lattice
+        :param lattice: formato retangular do lattice
+        :param normalization: normalizacaoo a partir da variancia dos objetos de input
+        :param initialization: metodo utilizado para inicializar o SOM. Opcoes sao: 1 - "pca" ; 2 - "random"
+        :param neighborhood: funcao para calculo de vizinhanca do lattice. Opcoes sao: 1 - "gaussian"; 2 - "bubble"
+        :param training: modo de treinamento. Opcoes sao: 1 - "seq"; 2 - "batch"
+        :param name: nome usado para identificar a rede SOM
         """
-        if normalization:
-            normalizer = NormalizatorFactory.build(normalization)
-        else:
-            normalizer = None
+        normalizer = NormalizatorFactory.build(normalization)
         neighborhood_calculator = NeighborhoodFactory.build(neighborhood)
-        return SOM(data, neighborhood_calculator, normalizer, mapsize, mask,
-                   mapshape, lattice, initialization, training, name, component_names)
+        return SOM(data, neighborhood_calculator, normalizer, mapsize, mask, mapshape, lattice, initialization, training, name, component_names)
 
 
 class SOM(object):
+    """."""
 
-    def __init__(self,
-                 data,
-                 neighborhood,
-                 normalizer=None,
-                 mapsize=None,
-                 mask=None,
-                 mapshape='planar',
-                 lattice='rect',
-                 initialization='pca',
-                 training='batch',
-                 name='sompy',
-                 component_names=None):
-        """
-        Self Organizing Map
+    def __init__(self, data, neighborhood, normalizer=None, mapsize=None, mask=None, mapshape='planar', lattice='rect', initialization='pca', training='batch', name='sompy', component_names=None):
+        """Self Organizing Map."""
+        if normalizer:
+            me, st = np.mean(data, axis=0), np.std(data, axis=0)
+            st[st == 0] = 1  # prevent: when sd = 0, normalized result = NaN
+            self._data = (data-me)/st
+        else:
+            self._data = data
 
-        :param data: data to be clustered, represented as a matrix of n rows,
-            as inputs and m cols as input features
-        :param neighborhood: neighborhood object calculator.
-        :param normalizer: normalizer object calculator.
-        :param mapsize: tuple/list defining the dimensions of the som. If
-            single number is provided is considered as the number of nodes.
-        :param mask: mask
-        :param mapshape: shape of the som.
-        :param lattice: type of lattice.
-        :param initialization: method to be used for initialization of the som.
-        :param name: name used to identify the som
-        :param training: Training mode (seq, batch)
-        """
-        self._data = normalizer.normalize(data) if normalizer else data
+        # Objeto responsavel por normalizar os dados
         self._normalizer = normalizer
+
+        # Dimensao é igual ao #colunas do dataset
         self._dim = data.shape[1]
+
+        # Length é igual ao #linhas do dataset
         self._dlen = data.shape[0]
+
+        # Defnimos como None o data_label e o neuronio BMU
         self._dlabel = None
         self._bmu = None
 
-        self.name = name
+        # Guardamos os dados puros
         self.data_raw = data
+
+        # Guarda objeto responsável por fazer a função de vizinhança
         self.neighborhood = neighborhood
         self.mapshape = mapshape
         self.initialization = initialization
         self.mask = mask or np.ones([1, self._dim])
-        mapsize = self.calculate_map_size(lattice) if not mapsize else mapsize
         self.codebook = Codebook(mapsize, lattice)
         self.training = training
         self._component_names = self.build_component_names() if component_names is None else [component_names]
         self._distance_matrix = self.calculate_map_dist()
+        self.name = name
+
+        mapsize = self.calculate_map_size(lattice) if not mapsize else mapsize
 
     @property
     def component_names(self):
@@ -223,7 +177,7 @@ class SOM(object):
         logging.root.setLevel(
             getattr(logging, verbose.upper()) if verbose else logging.ERROR)
 
-        logging.info(" Training...")
+        logging.info("Treinamento em Processo...")
         logging.debug((
             "--------------------------------------------------------------\n"
             " details: \n"
@@ -252,7 +206,7 @@ class SOM(object):
                             radiusin=train_finetune_radiusin, radiusfin=train_finetune_radiusfin,trainlen_factor=train_len_factor,maxtrainlen=maxtrainlen)
         logging.debug(
             " --------------------------------------------------------------")
-        logging.info(" Final quantization error: %f" % np.mean(self._bmu[1]))
+        logging.info("Erro final de quantização: %f" % np.mean(self._bmu[1]))
 
     def _calculate_ms_and_mpd(self):
         mn = np.min(self.codebook.mapsize)
@@ -267,7 +221,7 @@ class SOM(object):
         return ms, mpd
 
     def rough_train(self, njob=1, shared_memory=False, trainlen=None, radiusin=None, radiusfin=None,trainlen_factor=1,maxtrainlen=np.Inf):
-        logging.info(" Rough training...")
+        logging.info("[Treinamento Pesado]")
 
         ms, mpd = self._calculate_ms_and_mpd()
         #lbugnon: add maxtrainlen
@@ -287,7 +241,7 @@ class SOM(object):
         self._batchtrain(trainlen, radiusin, radiusfin, njob, shared_memory)
 
     def finetune_train(self, njob=1, shared_memory=False, trainlen=None, radiusin=None, radiusfin=None,trainlen_factor=1,maxtrainlen=np.Inf):
-        logging.info(" Finetune training...")
+        logging.info("[Treinamento de Ajuste]")
 
         ms, mpd = self._calculate_ms_and_mpd()
 
@@ -343,19 +297,10 @@ class SOM(object):
             self.codebook.matrix = self.update_codebook_voronoi(data, bmu,
                                                                 neighborhood)
 
-            #lbugnon: ojo! aca el bmy[1] a veces da negativo, y despues de eso se rompe...hay algo raro ahi
-            qerror = (i + 1, round(time() - t1, 3),
-                      np.mean(np.sqrt(bmu[1] + fixed_euclidean_x2))) #lbugnon: ojo aca me tiró un warning, revisar (commit sinc: 965666d3d4d93bcf48e8cef6ea2c41a018c1cb83 )
-            #lbugnon
-            #ipdb.set_trace()
-            #
-            logging.info(
-                " epoch: %d ---> elapsed time:  %f, quantization error: %f\n" %
-                qerror)
+            qerror = (i + 1, round(time() - t1, 3), np.mean(np.sqrt(bmu[1] + fixed_euclidean_x2))) #lbugnon: ojo aca me tiró un warning, revisar (commit sinc: 965666d3d4d93bcf48e8cef6ea2c41a018c1cb83 )
+            logging.info("[epoca %d] tempo:  %f, erro de quantização: %f\n" %qerror)
             if np.any(np.isnan(qerror)):
                 logging.info("nan quantization error, exit train\n")
-
-                #sys.exit("quantization error=nan, exit train")
 
         bmu[1] = np.sqrt(bmu[1] + fixed_euclidean_x2)
         self._bmu = bmu
@@ -648,7 +593,6 @@ class SOM(object):
                 A[i, j] = sum(c) / len(c)
                 A[j, i] = A[i, j]
 
-        VS = np.linalg.eig(A)
         eigval = sorted(np.linalg.eig(A)[0])
         if eigval[-1] == 0 or eigval[-2] * munits < eigval[-1]:
             ratio = 1

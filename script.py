@@ -202,46 +202,25 @@ class VarianceNormalizator(Normalizator):
     name = 'var'
 
     def _mean_and_standard_dev(self, data):
+        print('mean-std dev')
         return np.mean(data, axis=0), np.std(data, axis=0)
 
     def normalize(self, data):
+        print('normalize')
         me, st = self._mean_and_standard_dev(data)
         st[st == 0] = 1  # prevent: when sd = 0, normalized result = NaN
         return (data-me)/st
 
     def normalize_by(self, raw_data, data):
+        print('normalize-by')
         me, st = self._mean_and_standard_dev(raw_data)
         st[st == 0] = 1  # prevent: when sd = 0, normalized result = NaN
         return (data-me)/st
 
     def denormalize_by(self, data_by, n_vect):
+        print('denormalize-by')
         me, st = self._mean_and_standard_dev(data_by)
         return n_vect * st + me
-
-
-class RangeNormalizator(Normalizator):
-
-    name = 'range'
-
-
-class LogNormalizator(Normalizator):
-
-    name = 'log'
-
-
-class LogisticNormalizator(Normalizator):
-
-    name = 'logistic'
-
-
-class HistDNormalizator(Normalizator):
-
-    name = 'histd'
-
-
-class HistCNormalizator(Normalizator):
-
-    name = 'histc'
 # from .view import MatplotView
 from matplotlib import pyplot as plt
 from matplotlib import cm
@@ -1098,9 +1077,9 @@ class KMeans():
 
     def busca_centroides_mais_proximo(self):
         """."""
-        #É adicionado uma nova dimensão aos centroids de forma que seja possivel 
+        #É adicionado uma nova dimensão aos centroids de forma que seja possivel
         #calcular as diferenças entre as coordenadas para todos os centroids de uma vez
-        #Ex: 
+        #Ex:
         #Antes de ser redimensionado  :  centroids                = [[1,2,3][4,5,6][7,8,9]]
         #Depois de ser redimensionado :  centroids_redimensionado = [[[1,2,3],[4,5,6],[7,8,9]]]
         #dessa forma podemos obter as diferenças entre as cordenadas em uma unica operação:
@@ -1108,24 +1087,24 @@ class KMeans():
         #temos: centroids_redimensionado - p1 = [
         #                     [1,1,1], -> diferença das cordenadas do ponto 1 para o centroid 1
         #                     [4,4,4], -> diferença das cordenadas do ponto 1 para o centroid 2
-        #                     [7,7,7]  -> diferença das cordenadas do ponto 1 para o centroid 3 
+        #                     [7,7,7]  -> diferença das cordenadas do ponto 1 para o centroid 3
         #                   ]
         #
         centroids_redimensionado = self.centroids[:, np.newaxis , :]
-        #eleva-se a diferença ao quadrado 
+        #eleva-se a diferença ao quadrado
         diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
         #soma as diferenças e faz a raiz delas, obtendo as distancias euclidianas de todos os pontos para todos os centroids
         distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
         #identifica o centroid mais próximo de cada ponto
         centroid_mais_proximo = np.argmin(distancias, axis=0)
-    
+
         return centroid_mais_proximo
 
     def roda_kmeans(self, k_centroids):
         """."""
         self.inicia_centroides(k_centroids)
         MediaDistAnterior = 0.0
-        nIteracoes = 0 
+        nIteracoes = 0
         while(abs(MediaDistAnterior- self.MediaDistAtual) > self.erro):
             #Só executa se a lista de centroids não tiver sido determinada na ultima iteração
             nIteracoes += 1
@@ -1140,29 +1119,32 @@ class KMeans():
             #atualiza lista de centroids mais proximos e calcula a média da distancia entre os pontos e
             #os centroids mais proximos
             self.MediaDistAtual = self.calculaMediaDistancias(self.lista_centroid_mais_proximos)
-            
-            
+
+
     def movimenta_centroides(self, closest):
         """."""
         return np.array([self.points[closest == k].mean(axis=0) for k in range(self.centroids.shape[0])])
 
     def calculaMediaDistancias(self , centroid_mais_proximo):
-        
+
         centroids_redimensionado = self.centroids[:, np.newaxis , :]
         diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
         distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
         centroid_mais_proximo = np.argmin(distancias, axis=0)
-        
+
         listaDistancias = [0.0]*len(self.centroids)
         indexlista = 0
         #soma todas as distâncias entre os pontos e os centroids mais próximos
         for centroid in centroid_mais_proximo:
             listaDistancias[centroid] += distancias[centroid][indexlista]
             indexlista += 1
-        #tira a média da distância entre os pontos e os centroids 
+        #tira a média da distância entre os pontos e os centroids
         for indice in range(0 , len(listaDistancias)):
             listaDistancias[indice] = listaDistancias[indice]/sum(centroid_mais_proximo == indice)
-        return sum(listaDistancias)# -*- coding: utf-8 -*-
+        return sum(listaDistancias)
+"""."""
+
+# -*- coding: utf-8 -*-
 
 # Author: Vahid Moosavi (sevamoo@gmail.com)
 #         Chair For Computer Aided Architectural Design, ETH  Zurich
@@ -1176,9 +1158,7 @@ import tempfile
 import os
 import itertools
 import logging
-
 import numpy as np
-
 from time import time
 from multiprocessing.dummy import Pool
 from multiprocessing import cpu_count
@@ -1187,111 +1167,54 @@ from sklearn import neighbors
 from sklearn.externals.joblib import Parallel, delayed, load, dump
 import sys
 
-# from .decorators import timeit
-# from .codebook import Codebook
-# from .neighborhood import NeighborhoodFactory
-# from .normalization import NormalizatorFactory
-
-#lbugnon
-#import ipdb
-# import sompy
-#
 
 class ComponentNamesError(Exception):
+    """."""
+
     pass
 
 
 class LabelsError(Exception):
+    """."""
+
     pass
 
 
 class SOMFactory(object):
+    """."""
 
     @staticmethod
-    def build(data,
-              mapsize=None,
-              mask=None,
-              mapshape='planar',
-              lattice='rect',
-              normalization='var',
-              initialization='pca',
-              neighborhood='gaussian',
-              training='batch',
-              name='sompy',
-              component_names=None):
-        """
-        :param data: data to be clustered, represented as a matrix of n rows,
-            as inputs and m cols as input features
-        :param neighborhood: neighborhood object calculator.  Options are:
-            - gaussian
-            - bubble
-            - manhattan (not implemented yet)
-            - cut_gaussian (not implemented yet)
-            - epanechicov (not implemented yet)
+    def build(data, mapsize=None, mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='pca', neighborhood='gaussian', training='batch', name='sompy', component_names=None):
+        """Fabrica de SOM.
 
-        :param normalization: normalizer object calculator. Options are:
-            - var
-
-        :param mapsize: tuple/list defining the dimensions of the som.
-            If single number is provided is considered as the number of nodes.
+        :param data: dados que precisam ser clusterizados, representados por uma matriz n x m
+        :param mapsize: lista que define o numero de n linhas e m colunas da parametro data
         :param mask: mask
-        :param mapshape: shape of the som. Options are:
-            - planar
-            - toroid (not implemented yet)
-            - cylinder (not implemented yet)
-
-        :param lattice: type of lattice. Options are:
-            - rect
-            - hexa (not implemented yet)
-
-        :param initialization: method to be used for initialization of the som.
-            Options are:
-            - pca
-            - random
-
-        :param name: name used to identify the som
-        :param training: Training mode (seq, batch)
+        :param mapshape: formato planar do lattice
+        :param lattice: formato retangular do lattice
+        :param normalization: normalizacaoo a partir da variancia dos objetos de input
+        :param initialization: metodo utilizado para inicializar o SOM. Opcoes sao: 1 - "pca" ; 2 - "random"
+        :param neighborhood: funcao para calculo de vizinhanca do lattice. Opcoes sao: 1 - "gaussian"; 2 - "bubble"
+        :param training: modo de treinamento. Opcoes sao: 1 - "seq"; 2 - "batch"
+        :param name: nome usado para identificar a rede SOM
         """
-        if normalization:
-            normalizer = NormalizatorFactory.build(normalization)
-        else:
-            normalizer = None
+        normalizer = NormalizatorFactory.build(normalization)
         neighborhood_calculator = NeighborhoodFactory.build(neighborhood)
-        return SOM(data, neighborhood_calculator, normalizer, mapsize, mask,
-                   mapshape, lattice, initialization, training, name, component_names)
+        return SOM(data, neighborhood_calculator, normalizer, mapsize, mask, mapshape, lattice, initialization, training, name, component_names)
 
 
 class SOM(object):
+    """."""
 
-    def __init__(self,
-                 data,
-                 neighborhood,
-                 normalizer=None,
-                 mapsize=None,
-                 mask=None,
-                 mapshape='planar',
-                 lattice='rect',
-                 initialization='pca',
-                 training='batch',
-                 name='sompy',
-                 component_names=None):
-        """
-        Self Organizing Map
+    def __init__(self, data, neighborhood, normalizer=None, mapsize=None, mask=None, mapshape='planar', lattice='rect', initialization='pca', training='batch', name='sompy', component_names=None):
+        """Self Organizing Map."""
+        if normalizer:
+            me, st = np.mean(data, axis=0), np.std(data, axis=0)
+            st[st == 0] = 1  # prevent: when sd = 0, normalized result = NaN
+            self._data = (data-me)/st
+        else:
+            self._data = data
 
-        :param data: data to be clustered, represented as a matrix of n rows,
-            as inputs and m cols as input features
-        :param neighborhood: neighborhood object calculator.
-        :param normalizer: normalizer object calculator.
-        :param mapsize: tuple/list defining the dimensions of the som. If
-            single number is provided is considered as the number of nodes.
-        :param mask: mask
-        :param mapshape: shape of the som.
-        :param lattice: type of lattice.
-        :param initialization: method to be used for initialization of the som.
-        :param name: name used to identify the som
-        :param training: Training mode (seq, batch)
-        """
-        self._data = normalizer.normalize(data) if normalizer else data
         self._normalizer = normalizer
         self._dim = data.shape[1]
         self._dlen = data.shape[0]
@@ -1387,7 +1310,7 @@ class SOM(object):
         logging.root.setLevel(
             getattr(logging, verbose.upper()) if verbose else logging.ERROR)
 
-        logging.info(" Training...")
+        logging.info("Treinamento em Processo...")
         logging.debug((
             "--------------------------------------------------------------\n"
             " details: \n"
@@ -1416,7 +1339,7 @@ class SOM(object):
                             radiusin=train_finetune_radiusin, radiusfin=train_finetune_radiusfin,trainlen_factor=train_len_factor,maxtrainlen=maxtrainlen)
         logging.debug(
             " --------------------------------------------------------------")
-        logging.info(" Final quantization error: %f" % np.mean(self._bmu[1]))
+        logging.info("Erro final de quantização: %f" % np.mean(self._bmu[1]))
 
     def _calculate_ms_and_mpd(self):
         mn = np.min(self.codebook.mapsize)
@@ -1431,7 +1354,7 @@ class SOM(object):
         return ms, mpd
 
     def rough_train(self, njob=1, shared_memory=False, trainlen=None, radiusin=None, radiusfin=None,trainlen_factor=1,maxtrainlen=np.Inf):
-        logging.info(" Rough training...")
+        logging.info("[Treinamento Pesado]")
 
         ms, mpd = self._calculate_ms_and_mpd()
         #lbugnon: add maxtrainlen
@@ -1451,7 +1374,7 @@ class SOM(object):
         self._batchtrain(trainlen, radiusin, radiusfin, njob, shared_memory)
 
     def finetune_train(self, njob=1, shared_memory=False, trainlen=None, radiusin=None, radiusfin=None,trainlen_factor=1,maxtrainlen=np.Inf):
-        logging.info(" Finetune training...")
+        logging.info("[Treinamento de Ajuste]")
 
         ms, mpd = self._calculate_ms_and_mpd()
 
@@ -1507,19 +1430,10 @@ class SOM(object):
             self.codebook.matrix = self.update_codebook_voronoi(data, bmu,
                                                                 neighborhood)
 
-            #lbugnon: ojo! aca el bmy[1] a veces da negativo, y despues de eso se rompe...hay algo raro ahi
-            qerror = (i + 1, round(time() - t1, 3),
-                      np.mean(np.sqrt(bmu[1] + fixed_euclidean_x2))) #lbugnon: ojo aca me tiró un warning, revisar (commit sinc: 965666d3d4d93bcf48e8cef6ea2c41a018c1cb83 )
-            #lbugnon
-            #ipdb.set_trace()
-            #
-            logging.info(
-                " epoch: %d ---> elapsed time:  %f, quantization error: %f\n" %
-                qerror)
+            qerror = (i + 1, round(time() - t1, 3), np.mean(np.sqrt(bmu[1] + fixed_euclidean_x2))) #lbugnon: ojo aca me tiró un warning, revisar (commit sinc: 965666d3d4d93bcf48e8cef6ea2c41a018c1cb83 )
+            logging.info("[epoca %d] tempo:  %f, erro de quantização: %f\n" %qerror)
             if np.any(np.isnan(qerror)):
                 logging.info("nan quantization error, exit train\n")
-
-                #sys.exit("quantization error=nan, exit train")
 
         bmu[1] = np.sqrt(bmu[1] + fixed_euclidean_x2)
         self._bmu = bmu
@@ -2196,47 +2110,25 @@ if __name__ == "__main__":
 		# ---------------------
 		# SOM
 		print('----- Iniciando Processamento SOM -----')
-		# map_dim = 20
-		# som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
-		# som.random_weights_init(dados)
-		# som.train_batch(dados, 10000)
-		# print(som.activation_response(dados))
-		# print(som.quantization_error(dados))
-		# print(som.win_map(dados))
-		# print(som.distance_map(dados))
-		# som.plot2(dados)
 
-		mapsize = [50,50]
-		som = SOMFactory.build(dados, mapsize, mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='pca', neighborhood='gaussian', training='batch')
-		som.train(n_job=5, verbose='info')  # verbose='debug' will print more, and verbose=None wont print anything
-		v = View2DPacked(50, 50, 'test',text_size=8)
-		# could be done in a one-liner: sompy.mapview.View2DPacked(300, 300, 'test').show(som)
-		v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6) #which_dim='all' default
-		v.save('2d_packed_test')
-		som.component_names = ['1','2']
-		v = View2DPacked(50, 50, 'test',text_size=8)
+		mapsize = [25,25]
+		som = SOMFactory.build(dados, mapsize, mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='random', neighborhood='gaussian', training='batch')
+		som.train(n_job=3, verbose='info')
+
+		# ---------------------
+		# Plots
+		v = View2DPacked(25, 25, 'SOM Plots',text_size=8)
+		# v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6) #which_dim='all' default
 		v.show(som, what='codebook', which_dim='all', cmap='jet', col_sz=6) #which_dim='all' default
 		v.save('2d_packed_test2')
-		# c = sompy.mapview.View2DPacked()
-		v = View2DPacked(2, 2, 'test',text_size=8)
-		#first you can do clustering. Currently only K-means on top of the trained som
-		cl = som.cluster(n_clusters=10)
-		# print cl
-		getattr(som, 'cluster_labels')
-		h = HitMapView(10, 10, 'hitmap', text_size=8, show_text=True)
-		h.show(som)
-		h.save('2d_packed_test3')
-		u = UMatrixView(50, 50, 'umatrix', show_axis=True, text_size=8, show_text=True)
-		#This is the Umat value
-		UMAT  = u.build_u_matrix(som, distance=1, row_normalized=False)
-		#Here you have Umatrix plus its render
-		UMAT = u.show(som, distance2=1, row_normalized=False, show_data=True, contooor=True, blob=False)
-		u.save('2d_packed_test4')
-
-
-	else:
-		preprocessor = ProcessTexts(texts=['bbc_local'])
-		print('----- Transformando Tokens em Matriz -----')
-		matrix = TransformMatrix(preprocessor.tokens)
-		print('----- Resultados do bag of words -----')
-		data = matrix.get_matrix(type='tf-idf')
+		# som.component_names = ['1','2']
+		# v = View2DPacked(2, 2, 'test',text_size=8)
+		# cl = som.cluster(n_clusters=10)
+		# getattr(som, 'cluster_labels')
+		# h = HitMapView(10, 10, 'hitmap', text_size=8, show_text=True)
+		# h.show(som)
+		# h.save('2d_packed_test3')
+		# u = UMatrixView(50, 50, 'umatrix', show_axis=True, text_size=8, show_text=True)
+		# UMAT  = u.build_u_matrix(som, distance=1, row_normalized=False)
+		# UMAT = u.show(som, distance2=1, row_normalized=False, show_data=True, contooor=True, blob=False)
+		# u.save('2d_packed_test4')

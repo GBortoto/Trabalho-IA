@@ -32,43 +32,22 @@ class VarianceNormalizator(Normalizator):
     name = 'var'
 
     def _mean_and_standard_dev(self, data):
+        print('mean-std dev')
         return np.mean(data, axis=0), np.std(data, axis=0)
 
     def normalize(self, data):
+        print('normalize')
         me, st = self._mean_and_standard_dev(data)
         st[st == 0] = 1  # prevent: when sd = 0, normalized result = NaN
         return (data-me)/st
 
     def normalize_by(self, raw_data, data):
+        print('normalize-by')
         me, st = self._mean_and_standard_dev(raw_data)
         st[st == 0] = 1  # prevent: when sd = 0, normalized result = NaN
         return (data-me)/st
 
     def denormalize_by(self, data_by, n_vect):
+        print('denormalize-by')
         me, st = self._mean_and_standard_dev(data_by)
         return n_vect * st + me
-
-
-class RangeNormalizator(Normalizator):
-
-    name = 'range'
-
-
-class LogNormalizator(Normalizator):
-
-    name = 'log'
-
-
-class LogisticNormalizator(Normalizator):
-
-    name = 'logistic'
-
-
-class HistDNormalizator(Normalizator):
-
-    name = 'histd'
-
-
-class HistCNormalizator(Normalizator):
-
-    name = 'histc'

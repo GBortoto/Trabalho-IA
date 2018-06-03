@@ -39,28 +39,19 @@ if __name__ == "__main__":
 		# ---------------------
 		# SOM
 		print('----- Iniciando Processamento SOM -----')
-		# map_dim = 20
-		# som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
-		# som.random_weights_init(dados)
-		# som.train_batch(dados, 10000)
-		# print(som.activation_response(dados))
-		# print(som.quantization_error(dados))
-		# print(som.win_map(dados))
-		# print(som.distance_map(dados))
-		# som.plot2(dados)
 
-		mapsize = [100,100]
+		mapsize = [25,25]
 		som = SOMFactory.build(dados, mapsize, mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='random', neighborhood='gaussian', training='batch')
-		som.train(n_job=5, verbose='info')  # verbose='debug' will print more, and verbose=None wont print anything
+		som.train(n_job=3, verbose='info')
 
-		# Plots --------------
-		# v = View2DPacked(50, 50, 'test',text_size=8)
+		# ---------------------
+		# Plots
+		v = View2DPacked(25, 25, 'SOM Plots',text_size=8)
 		# v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6) #which_dim='all' default
-		# v.save('2d_packed_test')
+		v.show(som, what='codebook', which_dim=[0,1,2,3,4,5], cmap=None, col_sz=6) #which_dim='all' default
+		v.show(som, what='codebook', which_dim='all', cmap='jet', col_sz=6) #which_dim='all' default
+		v.save('2d_packed_test2')
 		# som.component_names = ['1','2']
-		# v = View2DPacked(50, 50, 'test',text_size=8)
-		# v.show(som, what='codebook', which_dim='all', cmap='jet', col_sz=6) #which_dim='all' default
-		# v.save('2d_packed_test2')
 		# v = View2DPacked(2, 2, 'test',text_size=8)
 		# cl = som.cluster(n_clusters=10)
 		# getattr(som, 'cluster_labels')
