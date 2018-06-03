@@ -1,3 +1,411 @@
+
+
+class View(object):
+    def __init__(self, width, height, title, show_axis=True, packed=True,
+                 text_size=2.8, show_text=True, col_size=6, *args, **kwargs):
+        self.width = width
+        self.height = height
+        self.title = title
+        self.show_axis = show_axis
+        self.packed = packed
+        self.text_size = text_size
+        self.show_text = show_text
+        self.col_size = col_size
+
+    def prepare(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def save(self, filename):
+        raise NotImplementedError()
+
+    def show(self, *args, **kwrags):
+        raise NotImplementedError()
+
+
+class MatplotView(View):
+
+    def __init__(self, width, height, title, show_axis=True, packed=True,
+                 text_size=2.8, show_text=True, col_size=6, *args, **kwargs):
+        super(MatplotView, self).__init__(width, height, title, show_axis,
+                                          packed, text_size, show_text,
+                                          col_size, *args, **kwargs)
+        self._fig = None
+
+    def __del__(self):
+        self._close_fig()
+
+    def _close_fig(self):
+        if self._fig:
+            plt.close(self._fig)
+
+    def prepare(self, *args, **kwargs):
+        self._close_fig()
+        self._fig = plt.figure(figsize=(self.width, self.height))
+        plt.title(self.title)
+        plt.axis('off')
+        plt.rc('font', **{'size': self.text_size})
+
+    def save(self, filename, transparent=False, bbox_inches='tight', dpi=400):
+        self._fig.savefig(filename, transparent=transparent, dpi=dpi,
+                          bbox_inches=bbox_inches)
+
+    def show(self, *args, **kwrags):
+        raise NotImplementedError()
+
+import logging
+from functools import wraps
+from time import time
+
+
+def timeit(log_level=logging.INFO, alternative_title=None):
+    def wrap(f):
+        @wraps(f)  # keeps the f.__name__ outside the wrapper
+        def wrapped_f(*args, **kwargs):
+            t0 = time()
+            result = f(*args, **kwargs)
+            ts = round(time() - t0, 3)
+
+            title = alternative_title or f.__name__
+            logging.getLogger().log(
+                log_level, " %s took: %f seconds" % (title, ts))
+
+            return result
+
+        return wrapped_f
+    return wrap
+# from .view import MatplotView
+from matplotlib import pyplot as plt
+from pylab import imshow, contour
+from math import sqrt
+import numpy as np
+import scipy
+
+
+class UMatrixView(MatplotView):
+
+    def build_u_matrix(self, som, distance=1, row_normalized=False):
+        UD2 = som.calculate_map_dist()
+        Umatrix = np.zeros((som.codebook.nnodes, 1))
+        codebook = som.codebook.matrix
+        if row_normalized:
+            vector = som._normalizer.normalize_by(codebook.T, codebook.T,
+                                                  method='var').T
+        else:
+            vector = codebook
+
+        for i in range(som.codebook.nnodes):
+            codebook_i = vector[i][np.newaxis, :]
+            neighborbor_ind = UD2[i][0:] <= distance
+            neighborbor_codebooks = vector[neighborbor_ind]
+            Umatrix[i] = scipy.spatial.distance_matrix(
+                codebook_i, neighborbor_codebooks).mean()
+
+        return Umatrix.reshape(som.codebook.mapsize)
+
+    def show(self, som, distance2=1, row_normalized=False, show_data=True,
+             contooor=True, blob=False, labels=False):
+        umat = self.build_u_matrix(som, distance=distance2,
+                                   row_normalized=row_normalized)
+        msz = som.codebook.mapsize
+        proj = som.project_data(som.data_raw)
+        coord = som.bmu_ind_to_xy(proj)
+
+        self._fig, ax = plt.subplots(1, 1)
+        imshow(umat, cmap=plt.cm.get_cmap('RdYlBu_r'), alpha=1)
+
+        if contooor:
+            mn = np.min(umat.flatten())
+            mx = np.max(umat.flatten())
+            std = np.std(umat.flatten())
+            md = np.median(umat.flatten())
+            mx = md + 0*std
+            contour(umat, np.linspace(mn, mx, 15), linewidths=0.7,
+                    cmap=plt.cm.get_cmap('Blues'))
+
+        if show_data:
+            plt.scatter(coord[:, 1], coord[:, 0], s=2, alpha=1., c='Gray',
+                        marker='o', cmap='jet', linewidths=3, edgecolor='Gray')
+            plt.axis('off')
+
+        if labels:
+            if labels is True:
+                labels = som.build_data_labels()
+            for label, x, y in zip(labels, coord[:, 1], coord[:, 0]):
+                plt.annotate(str(label), xy=(x, y),
+                             horizontalalignment='center',
+                             verticalalignment='center')
+
+        ratio = float(msz[0])/(msz[0]+msz[1])
+        self._fig.set_size_inches((1-ratio)*15, ratio*15)
+        plt.tight_layout()
+        plt.subplots_adjust(hspace=.00, wspace=.000)
+        sel_points = list()
+
+        if blob:
+            from skimage.color import rgb2gray
+            from skimage.feature import blob_log
+
+            image = 1 / umat
+            rgb2gray(image)
+
+            # 'Laplacian of Gaussian'
+            blobs = blob_log(image, max_sigma=5, num_sigma=4, threshold=.152)
+            blobs[:, 2] = blobs[:, 2] * sqrt(2)
+            imshow(umat, cmap=plt.cm.get_cmap('RdYlBu_r'), alpha=1)
+            sel_points = list()
+
+            for blob in blobs:
+                row, col, r = blob
+                c = plt.Circle((col, row), r, color='red', linewidth=2,
+                               fill=False)
+                ax.add_patch(c)
+                dist = scipy.spatial.distance_matrix(
+                    coord[:, :2], np.array([row, col])[np.newaxis, :])
+                sel_point = dist <= r
+                plt.plot(coord[:, 1][sel_point[:, 0]],
+                         coord[:, 0][sel_point[:, 0]], '.r')
+                sel_points.append(sel_point[:, 0])
+
+        plt.show()
+        return sel_points, umat
+import numpy as np
+import sys
+import inspect
+
+
+class NormalizatorFactory(object):
+
+    @staticmethod
+    def build(type_name):
+        for name, obj in inspect.getmembers(sys.modules[__name__]):
+            if inspect.isclass(obj):
+                if hasattr(obj, 'name') and type_name == obj.name:
+                    return obj()
+        else:
+            raise Exception("Unknown normalization type '%s'" % type_name)
+
+
+class Normalizator(object):
+
+    def normalize(self, data):
+        raise NotImplementedError()
+
+    def normalize_by(self, raw_data, data):
+        raise NotImplementedError()
+
+    def denormalize_by(self, raw_data, data):
+        raise NotImplementedError()
+
+
+class VarianceNormalizator(Normalizator):
+
+    name = 'var'
+
+    def _mean_and_standard_dev(self, data):
+        return np.mean(data, axis=0), np.std(data, axis=0)
+
+    def normalize(self, data):
+        me, st = self._mean_and_standard_dev(data)
+        st[st == 0] = 1  # prevent: when sd = 0, normalized result = NaN
+        return (data-me)/st
+
+    def normalize_by(self, raw_data, data):
+        me, st = self._mean_and_standard_dev(raw_data)
+        st[st == 0] = 1  # prevent: when sd = 0, normalized result = NaN
+        return (data-me)/st
+
+    def denormalize_by(self, data_by, n_vect):
+        me, st = self._mean_and_standard_dev(data_by)
+        return n_vect * st + me
+
+
+class RangeNormalizator(Normalizator):
+
+    name = 'range'
+
+
+class LogNormalizator(Normalizator):
+
+    name = 'log'
+
+
+class LogisticNormalizator(Normalizator):
+
+    name = 'logistic'
+
+
+class HistDNormalizator(Normalizator):
+
+    name = 'histd'
+
+
+class HistCNormalizator(Normalizator):
+
+    name = 'histc'
+# from .view import MatplotView
+from matplotlib import pyplot as plt
+from matplotlib import cm
+from matplotlib.colors import LogNorm
+import numpy as np
+
+
+class Hist2d(MatplotView):
+
+    def _fill_hist(self, x, y, mapsize, data_coords, what='train'):
+        x = np.arange(.5, mapsize[1]+.5, 1)
+        y = np.arange(.5, mapsize[0]+.5, 1)
+        X, Y = np.meshgrid(x, y)
+
+        if what == 'train':
+            a = plt.hist2d(x, y, bins=(mapsize[1], mapsize[0]), alpha=.0,
+                           cmap=cm.jet)
+            area = a[0].T * 12
+            plt.scatter(data_coords[:, 1], mapsize[0] - .5 - data_coords[:, 0],
+                        s=area.flatten(), alpha=.9, c='None', marker='o',
+                        cmap='jet', linewidths=3, edgecolor='r')
+
+        else:
+            a = plt.hist2d(x, y, bins=(mapsize[1], mapsize[0]), alpha=.0,
+                           cmap=cm.jet, norm=LogNorm())
+            area = a[0].T*50
+            plt.scatter(data_coords[:, 1] + .5,
+                        mapsize[0] - .5 - data_coords[:, 0],
+                        s=area, alpha=0.9, c='None', marker='o', cmap='jet',
+                        linewidths=3, edgecolor='r')
+            plt.scatter(data_coords[:, 1]+.5, mapsize[0]-.5-data_coords[:, 0],
+                        s=area, alpha=0.2, c='b', marker='o', cmap='jet',
+                        linewidths=3, edgecolor='r')
+
+        plt.xlim(0, mapsize[1])
+        plt.ylim(0, mapsize[0])
+
+    def show(self, som, data=None):
+        # First Step: show the hitmap of all the training data
+        coord = som.bmu_ind_to_xy(som.project_data(som.data_raw))
+
+        self.prepare()
+
+        ax = self._fig.add_subplot(111)
+        ax.xaxis.set_ticks([i for i in range(0, som.codebook.mapsize[1])])
+        ax.yaxis.set_ticks([i for i in range(0, som.codebook.mapsize[0])])
+        ax.xaxis.set_ticklabels([])
+        ax.yaxis.set_ticklabels([])
+        ax.grid(True, linestyle='-', linewidth=.5)
+
+        self._fill_hist(coord[:, 1], coord[:, 0], som.codebook.mapsize,
+                        som.bmu_ind_to_xy(np.arange(som.codebook.nnodes)))
+
+        if data:
+            coord_d = som.bmu_ind_to_xy(som.project_data(data))
+            self._fill_hist(coord[:, 1], coord[:, 0], som.codebook.mapsize,
+                            coord_d, 'data')
+
+        plt.show()
+# from .view import MatplotView
+from matplotlib import pyplot as plt
+import numpy as np
+
+
+class HitMapView(MatplotView):
+
+    def _set_labels(self, cents, ax, labels):
+        for i, txt in enumerate(labels):
+            ax.annotate(txt, (cents[i, 1], cents[i, 0]), size=10, va="center")
+
+    def show(self, som, data=None):
+
+        try:
+            codebook = getattr(som, 'cluster_labels')
+        except:
+            codebook = som.cluster()
+
+        # codebook = getattr(som, 'cluster_labels', som.cluster())
+        msz = som.codebook.mapsize
+
+        self.prepare()
+        ax = self._fig.add_subplot(111)
+
+        if data:
+            proj = som.project_data(data)
+            cents = som.bmu_ind_to_xy(proj)
+            self._set_labels(cents, ax, codebook[proj])
+
+        else:
+            cents = som.bmu_ind_to_xy(np.arange(0, msz[0]*msz[1]))
+            self._set_labels(cents, ax, codebook)
+
+        plt.imshow(codebook.reshape(msz[0], msz[1])[::], alpha=.5)
+        plt.show()
+
+        return cents
+# from .view import MatplotView
+from matplotlib import pyplot as plt
+import numpy as np
+
+
+class DotMapView(MatplotView):
+
+    def init_figure(self, dim, cols):
+        no_row_in_plot = dim/cols + 1
+        no_col_in_plot = dim if no_row_in_plot <= 1 else cols
+        h = .1
+        w = .1
+        self.width = no_col_in_plot*2.5*(1+w)
+        self.height = no_row_in_plot*2.5*(1+h)
+        self.prepare()
+
+    def plot(self, data, coords, msz0, msz1, colormap, dlen, dim, rows, cols):
+        for i in range(dim):
+            plt.subplot(rows, cols, i+1)
+
+            # This uses the colors uniquely for each record, while in normal
+            # views, it is based on the values within each dimensions. This is
+            # important when we are dealing with time series. Where we don't
+            # want to normalize colors within each time period, rather we like
+            # to see the patterns of each data records in time.
+            mn = np.min(data[:, :], axis=1)
+            mx = np.max(data[:, :], axis=1)
+
+            for j in range(dlen):
+                plt.scatter(coords[j, 1],
+                            msz0-1-coords[j, 0],
+                            c=data[j, i],
+                            vmax=mx[j], vmin=mn[j],
+                            s=90,
+                            marker='.',
+                            edgecolor='None',
+                            cmap=colormap,
+                            alpha=1)
+
+            eps = .0075
+            plt.xlim(0-eps, msz1-1+eps)
+            plt.ylim(0-eps, msz0-1+eps)
+            plt.xticks([])
+            plt.yticks([])
+
+    def show(self, som, which_dim='all', colormap=None, cols=None):
+        plt.cm.get_cmap(colormap) if colormap else plt.cm.get_cmap('RdYlBu_r')
+
+        data = som.data_raw
+        msz0, msz1 = som.codebook.mapsize
+        coords = som.bmu_ind_to_xy(som.project_data(data))[:, :2]
+        cols = cols if cols else 8  # 8 is arbitrary
+        rows = data.shape[1]/cols+1
+
+        if which_dim == 'all':
+            dim = data.shape[0]
+            self.init_figure(dim, cols)
+            self.plot(data, coords, msz0, msz1, colormap, data.shape[0],
+                      data.shape[1], rows, cols)
+
+        else:
+            dim = 1 if type(which_dim) is int else len(which_dim)
+            self.init_figure(dim, cols)
+            self.plot(data, coords, msz0, msz1, colormap, data.shape[0],
+                      len(which_dim), rows, cols)
+
+        plt.tight_layout()
+        plt.subplots_adjust(hspace=.16, wspace=.05)
 # -*- coding: utf-8 -*-
 
 """Implementação minimalista do self-organizing maps.
@@ -365,6 +773,179 @@ class TransformMatrix():
 			print('----- Processando Matriz TF-IDF -----')
 			tfidf_vectorize = TfidfTransformer(smooth_idf=False)
 			return tfidf_vectorize.fit_transform(self.bag_of_words).toarray()
+import numpy as np
+
+from sklearn.decomposition import PCA
+# from sklearn.decomposition import RandomizedPCA# (randomizedpca is deprecated)
+# from .decorators import timeit
+
+
+class InvalidNodeIndexError(Exception):
+    pass
+
+
+class InvalidMapsizeError(Exception):
+    pass
+
+
+class Codebook(object):
+
+    def __init__(self, mapsize, lattice='rect'):
+        self.lattice = lattice
+
+        if 2 == len(mapsize):
+            _size = [1, np.max(mapsize)] if 1 == np.min(mapsize) else mapsize
+
+        elif 1 == len(mapsize):
+            _size = [1, mapsize[0]]
+            print('input was considered as the numbers of nodes')
+            print('map size is [{dlen},{dlen}]'.format(dlen=int(mapsize[0]/2)))
+        else:
+            raise InvalidMapsizeError(
+                "Mapsize is expected to be a 2 element list or a single int")
+
+        self.mapsize = _size
+        self.nnodes = mapsize[0]*mapsize[1]
+        self.matrix = np.asarray(self.mapsize)
+        self.initialized = False
+
+    @timeit()
+    def random_initialization(self, data):
+        """
+        :param data: data to use for the initialization
+        :returns: initialized matrix with same dimension as input data
+        """
+        mn = np.tile(np.min(data, axis=0), (self.nnodes, 1))
+        mx = np.tile(np.max(data, axis=0), (self.nnodes, 1))
+        self.matrix = mn + (mx-mn)*(np.random.rand(self.nnodes, data.shape[1]))
+        self.initialized = True
+
+    @timeit()
+    def pca_linear_initialization(self, data):
+        """
+        We initialize the map, just by using the first two first eigen vals and
+        eigenvectors
+        Further, we create a linear combination of them in the new map by
+        giving values from -1 to 1 in each
+
+        X = UsigmaWT
+        XTX = Wsigma^2WT
+        T = XW = Usigma
+
+        // Transformed by W EigenVector, can be calculated by multiplication
+        // PC matrix by eigenval too
+        // Further, we can get lower ranks by using just few of the eigen
+        // vevtors
+
+        T(2) = U(2)sigma(2) = XW(2) ---> 2 is the number of selected
+        eigenvectors
+
+        (*) Note that 'X' is the covariance matrix of original data
+
+        :param data: data to use for the initialization
+        :returns: initialized matrix with same dimension as input data
+        """
+        cols = self.mapsize[1]
+        coord = None
+        pca_components = None
+
+        if np.min(self.mapsize) > 1:
+            coord = np.zeros((self.nnodes, 2))
+            pca_components = 2
+
+            for i in range(0, self.nnodes):
+                coord[i, 0] = int(i / cols)  # x
+                coord[i, 1] = int(i % cols)  # y
+
+        elif np.min(self.mapsize) == 1:
+            coord = np.zeros((self.nnodes, 1))
+            pca_components = 1
+
+            for i in range(0, self.nnodes):
+                coord[i, 0] = int(i % cols)  # y
+
+        mx = np.max(coord, axis=0)
+        mn = np.min(coord, axis=0)
+        coord = (coord - mn)/(mx-mn)
+        coord = (coord - .5)*2
+        me = np.mean(data, 0)
+        data = (data - me)
+        tmp_matrix = np.tile(me, (self.nnodes, 1))
+
+        # Randomized PCA is scalable
+        #pca = RandomizedPCA(n_components=pca_components) # RandomizedPCA is deprecated.
+        pca = PCA(n_components=pca_components, svd_solver='randomized')
+
+        pca.fit(data)
+        eigvec = pca.components_
+        eigval = pca.explained_variance_
+        norms = np.sqrt(np.einsum('ij,ij->i', eigvec, eigvec))
+        eigvec = ((eigvec.T/norms)*eigval).T
+
+        for j in range(self.nnodes):
+            for i in range(eigvec.shape[0]):
+                tmp_matrix[j, :] = tmp_matrix[j, :] + coord[j, i]*eigvec[i, :]
+
+        self.matrix = np.around(tmp_matrix, decimals=6)
+        self.initialized = True
+
+    def grid_dist(self, node_ind):
+        """
+        Calculates grid distance based on the lattice type.
+
+        :param node_ind: number between 0 and number of nodes-1. Depending on
+                         the map size, starting from top left
+        :returns: matrix representing the distance matrix
+        """
+        if self.lattice == 'rect':
+            return self._rect_dist(node_ind)
+
+        elif self.lattice == 'hexa':
+            return self._hexa_dist(node_ind)
+
+    def _hexa_dist(self, node_ind):
+        raise NotImplementedError()
+
+    def _rect_dist(self, node_ind):
+        """
+        Calculates the distance of the specified node to the other nodes in the
+        matrix, generating a distance matrix
+
+        Ej. The distance matrix for the node_ind=5, that corresponds to
+        the_coord (1,1)
+           array([[2, 1, 2, 5],
+                  [1, 0, 1, 4],
+                  [2, 1, 2, 5],
+                  [5, 4, 5, 8]])
+
+        :param node_ind: number between 0 and number of nodes-1. Depending on
+                         the map size, starting from top left
+        :returns: matrix representing the distance matrix
+        """
+        rows = self.mapsize[0]
+        cols = self.mapsize[1]
+        dist = None
+
+        # bmu should be an integer between 0 to no_nodes
+        if 0 <= node_ind <= (rows*cols):
+            node_col = int(node_ind % cols)
+            node_row = int(node_ind / cols)
+        else:
+            raise InvalidNodeIndexError(
+                "Node index '%s' is invalid" % node_ind)
+
+        if rows > 0 and cols > 0:
+            r = np.arange(0, rows, 1)[:, np.newaxis]
+            c = np.arange(0, cols, 1)
+            dist2 = (r-node_row)**2 + (c-node_col)**2
+
+            dist = dist2.ravel()
+        else:
+            raise InvalidMapsizeError(
+                "One or both of the map dimensions are invalid. "
+                "Cols '%s', Rows '%s'".format(cols=cols, rows=rows))
+
+        return dist
 """Class to process all texts."""
 
 # import os
@@ -444,6 +1025,7 @@ class ProcessTexts():
             # new_tokens.append((' '.join(token)).replace('  ', ' '))
             new_tokens.append(' '.join(token))
         self.tokens = new_tokens
+
 
 class KMeans():
     """."""
@@ -582,6 +1164,999 @@ class KMeans():
             listaDistancias[indice] = listaDistancias[indice]/sum(centroid_mais_proximo == indice)
         return sum(listaDistancias)# -*- coding: utf-8 -*-
 
+# Author: Vahid Moosavi (sevamoo@gmail.com)
+#         Chair For Computer Aided Architectural Design, ETH  Zurich
+#         Future Cities Lab
+#         www.vahidmoosavi.com
+
+# Contributor: Sebastian Packmann (sebastian.packmann@gmail.com)
+
+
+import tempfile
+import os
+import itertools
+import logging
+
+import numpy as np
+
+from time import time
+from multiprocessing.dummy import Pool
+from multiprocessing import cpu_count
+from scipy.sparse import csr_matrix
+from sklearn import neighbors
+from sklearn.externals.joblib import Parallel, delayed, load, dump
+import sys
+
+# from .decorators import timeit
+# from .codebook import Codebook
+# from .neighborhood import NeighborhoodFactory
+# from .normalization import NormalizatorFactory
+
+#lbugnon
+#import ipdb
+# import sompy
+#
+
+class ComponentNamesError(Exception):
+    pass
+
+
+class LabelsError(Exception):
+    pass
+
+
+class SOMFactory(object):
+
+    @staticmethod
+    def build(data,
+              mapsize=None,
+              mask=None,
+              mapshape='planar',
+              lattice='rect',
+              normalization='var',
+              initialization='pca',
+              neighborhood='gaussian',
+              training='batch',
+              name='sompy',
+              component_names=None):
+        """
+        :param data: data to be clustered, represented as a matrix of n rows,
+            as inputs and m cols as input features
+        :param neighborhood: neighborhood object calculator.  Options are:
+            - gaussian
+            - bubble
+            - manhattan (not implemented yet)
+            - cut_gaussian (not implemented yet)
+            - epanechicov (not implemented yet)
+
+        :param normalization: normalizer object calculator. Options are:
+            - var
+
+        :param mapsize: tuple/list defining the dimensions of the som.
+            If single number is provided is considered as the number of nodes.
+        :param mask: mask
+        :param mapshape: shape of the som. Options are:
+            - planar
+            - toroid (not implemented yet)
+            - cylinder (not implemented yet)
+
+        :param lattice: type of lattice. Options are:
+            - rect
+            - hexa (not implemented yet)
+
+        :param initialization: method to be used for initialization of the som.
+            Options are:
+            - pca
+            - random
+
+        :param name: name used to identify the som
+        :param training: Training mode (seq, batch)
+        """
+        if normalization:
+            normalizer = NormalizatorFactory.build(normalization)
+        else:
+            normalizer = None
+        neighborhood_calculator = NeighborhoodFactory.build(neighborhood)
+        return SOM(data, neighborhood_calculator, normalizer, mapsize, mask,
+                   mapshape, lattice, initialization, training, name, component_names)
+
+
+class SOM(object):
+
+    def __init__(self,
+                 data,
+                 neighborhood,
+                 normalizer=None,
+                 mapsize=None,
+                 mask=None,
+                 mapshape='planar',
+                 lattice='rect',
+                 initialization='pca',
+                 training='batch',
+                 name='sompy',
+                 component_names=None):
+        """
+        Self Organizing Map
+
+        :param data: data to be clustered, represented as a matrix of n rows,
+            as inputs and m cols as input features
+        :param neighborhood: neighborhood object calculator.
+        :param normalizer: normalizer object calculator.
+        :param mapsize: tuple/list defining the dimensions of the som. If
+            single number is provided is considered as the number of nodes.
+        :param mask: mask
+        :param mapshape: shape of the som.
+        :param lattice: type of lattice.
+        :param initialization: method to be used for initialization of the som.
+        :param name: name used to identify the som
+        :param training: Training mode (seq, batch)
+        """
+        self._data = normalizer.normalize(data) if normalizer else data
+        self._normalizer = normalizer
+        self._dim = data.shape[1]
+        self._dlen = data.shape[0]
+        self._dlabel = None
+        self._bmu = None
+
+        self.name = name
+        self.data_raw = data
+        self.neighborhood = neighborhood
+        self.mapshape = mapshape
+        self.initialization = initialization
+        self.mask = mask or np.ones([1, self._dim])
+        mapsize = self.calculate_map_size(lattice) if not mapsize else mapsize
+        self.codebook = Codebook(mapsize, lattice)
+        self.training = training
+        self._component_names = self.build_component_names() if component_names is None else [component_names]
+        self._distance_matrix = self.calculate_map_dist()
+
+    @property
+    def component_names(self):
+        return self._component_names
+
+    @component_names.setter
+    def component_names(self, compnames):
+        if self._dim == len(compnames):
+            self._component_names = np.asarray(compnames)[np.newaxis, :]
+        else:
+            raise ComponentNamesError('Component names should have the same '
+                                      'size as the data dimension/features')
+
+    def build_component_names(self):
+        cc = ['Variable-' + str(i+1) for i in range(0, self._dim)]
+        return np.asarray(cc)[np.newaxis, :]
+
+    @property
+    def data_labels(self):
+        return self._dlabel
+
+    @data_labels.setter
+    def data_labels(self, labels):
+        """
+        Set labels of the training data, it should be in the format of a list
+        of strings
+        """
+        if labels.shape == (1, self._dlen):
+            label = labels.T
+        elif labels.shape == (self._dlen, 1):
+            label = labels
+        elif labels.shape == (self._dlen,):
+            label = labels[:, np.newaxis]
+        else:
+            raise LabelsError('wrong label format')
+
+        self._dlabel = label
+
+    def build_data_labels(self):
+        cc = ['dlabel-' + str(i) for i in range(0, self._dlen)]
+        return np.asarray(cc)[:, np.newaxis]
+
+    def calculate_map_dist(self):
+        """
+        Calculates the grid distance, which will be used during the training
+        steps. It supports only planar grids for the moment
+        """
+        nnodes = self.codebook.nnodes
+
+        distance_matrix = np.zeros((nnodes, nnodes))
+        for i in range(nnodes):
+            distance_matrix[i] = self.codebook.grid_dist(i).reshape(1, nnodes)
+        return distance_matrix
+
+    @timeit()
+    def train(self,
+              n_job=1,
+              shared_memory=False,
+              verbose='info',
+              train_rough_len=None,
+              train_rough_radiusin=None,
+              train_rough_radiusfin=None,
+              train_finetune_len=None,
+              train_finetune_radiusin=None,
+              train_finetune_radiusfin=None,
+              train_len_factor=1,
+              maxtrainlen=np.Inf):
+        """
+        Trains the som
+
+        :param n_job: number of jobs to use to parallelize the traning
+        :param shared_memory: flag to active shared memory
+        :param verbose: verbosity, could be 'debug', 'info' or None
+        :param train_len_factor: Factor that multiply default training lenghts (similar to "training" parameter in the matlab version). (lbugnon)
+        """
+        logging.root.setLevel(
+            getattr(logging, verbose.upper()) if verbose else logging.ERROR)
+
+        logging.info(" Training...")
+        logging.debug((
+            "--------------------------------------------------------------\n"
+            " details: \n"
+            "      > data len is {data_len} and data dimension is {data_dim}\n"
+            "      > map size is {mpsz0},{mpsz1}\n"
+            "      > array size in log10 scale is {array_size}\n"
+            "      > number of jobs in parallel: {n_job}\n"
+            " -------------------------------------------------------------\n")
+            .format(data_len=self._dlen,
+                    data_dim=self._dim,
+                    mpsz0=self.codebook.mapsize[0],
+                    mpsz1=self.codebook.mapsize[1],
+                    array_size=np.log10(
+                        self._dlen * self.codebook.nnodes * self._dim),
+                    n_job=n_job))
+
+        if self.initialization == 'random':
+            self.codebook.random_initialization(self._data)
+
+        elif self.initialization == 'pca':
+            self.codebook.pca_linear_initialization(self._data)
+
+        self.rough_train(njob=n_job, shared_memory=shared_memory, trainlen=train_rough_len,
+                         radiusin=train_rough_radiusin, radiusfin=train_rough_radiusfin,trainlen_factor=train_len_factor,maxtrainlen=maxtrainlen)
+        self.finetune_train(njob=n_job, shared_memory=shared_memory, trainlen=train_finetune_len,
+                            radiusin=train_finetune_radiusin, radiusfin=train_finetune_radiusfin,trainlen_factor=train_len_factor,maxtrainlen=maxtrainlen)
+        logging.debug(
+            " --------------------------------------------------------------")
+        logging.info(" Final quantization error: %f" % np.mean(self._bmu[1]))
+
+    def _calculate_ms_and_mpd(self):
+        mn = np.min(self.codebook.mapsize)
+        max_s = max(self.codebook.mapsize[0], self.codebook.mapsize[1])
+
+        if mn == 1:
+            mpd = float(self.codebook.nnodes*10)/float(self._dlen)
+        else:
+            mpd = float(self.codebook.nnodes)/float(self._dlen)
+        ms = max_s/2.0 if mn == 1 else max_s
+
+        return ms, mpd
+
+    def rough_train(self, njob=1, shared_memory=False, trainlen=None, radiusin=None, radiusfin=None,trainlen_factor=1,maxtrainlen=np.Inf):
+        logging.info(" Rough training...")
+
+        ms, mpd = self._calculate_ms_and_mpd()
+        #lbugnon: add maxtrainlen
+        trainlen = min(int(np.ceil(30*mpd)),maxtrainlen) if not trainlen else trainlen
+        #print("maxtrainlen %d",maxtrainlen)
+        #lbugnon: add trainlen_factor
+        trainlen=int(trainlen*trainlen_factor)
+
+        if self.initialization == 'random':
+            radiusin = max(1, np.ceil(ms/3.)) if not radiusin else radiusin
+            radiusfin = max(1, radiusin/6.) if not radiusfin else radiusfin
+
+        elif self.initialization == 'pca':
+            radiusin = max(1, np.ceil(ms/8.)) if not radiusin else radiusin
+            radiusfin = max(1, radiusin/4.) if not radiusfin else radiusfin
+
+        self._batchtrain(trainlen, radiusin, radiusfin, njob, shared_memory)
+
+    def finetune_train(self, njob=1, shared_memory=False, trainlen=None, radiusin=None, radiusfin=None,trainlen_factor=1,maxtrainlen=np.Inf):
+        logging.info(" Finetune training...")
+
+        ms, mpd = self._calculate_ms_and_mpd()
+
+        #lbugnon: add maxtrainlen
+        if self.initialization == 'random':
+            trainlen = min(int(np.ceil(50*mpd)),maxtrainlen) if not trainlen else trainlen
+            radiusin = max(1, ms/12.)  if not radiusin else radiusin # from radius fin in rough training
+            radiusfin = max(1, radiusin/25.) if not radiusfin else radiusfin
+
+        elif self.initialization == 'pca':
+            trainlen = min(int(np.ceil(40*mpd)),maxtrainlen) if not trainlen else trainlen
+            radiusin = max(1, np.ceil(ms/8.)/4) if not radiusin else radiusin
+            radiusfin = 1 if not radiusfin else radiusfin # max(1, ms/128)
+
+        #print("maxtrainlen %d",maxtrainlen)
+
+        #lbugnon: add trainlen_factor
+        trainlen=int(trainlen_factor*trainlen)
+
+
+        self._batchtrain(trainlen, radiusin, radiusfin, njob, shared_memory)
+
+    def _batchtrain(self, trainlen, radiusin, radiusfin, njob=1,
+                    shared_memory=False):
+        radius = np.linspace(radiusin, radiusfin, trainlen)
+
+        if shared_memory:
+            data = self._data
+            data_folder = tempfile.mkdtemp()
+            data_name = os.path.join(data_folder, 'data')
+            dump(data, data_name)
+            data = load(data_name, mmap_mode='r')
+
+        else:
+            data = self._data
+
+        bmu = None
+
+        # X2 is part of euclidean distance (x-y)^2 = x^2 +y^2 - 2xy that we use
+        # for each data row in bmu finding.
+        # Since it is a fixed value we can skip it during bmu finding for each
+        # data point, but later we need it calculate quantification error
+        fixed_euclidean_x2 = np.einsum('ij,ij->i', data, data)
+
+        logging.info(" radius_ini: %f , radius_final: %f, trainlen: %d\n" %
+                     (radiusin, radiusfin, trainlen))
+
+        for i in range(trainlen):
+            t1 = time()
+            neighborhood = self.neighborhood.calculate(
+                self._distance_matrix, radius[i], self.codebook.nnodes)
+            bmu = self.find_bmu(data, njb=njob)
+            self.codebook.matrix = self.update_codebook_voronoi(data, bmu,
+                                                                neighborhood)
+
+            #lbugnon: ojo! aca el bmy[1] a veces da negativo, y despues de eso se rompe...hay algo raro ahi
+            qerror = (i + 1, round(time() - t1, 3),
+                      np.mean(np.sqrt(bmu[1] + fixed_euclidean_x2))) #lbugnon: ojo aca me tiró un warning, revisar (commit sinc: 965666d3d4d93bcf48e8cef6ea2c41a018c1cb83 )
+            #lbugnon
+            #ipdb.set_trace()
+            #
+            logging.info(
+                " epoch: %d ---> elapsed time:  %f, quantization error: %f\n" %
+                qerror)
+            if np.any(np.isnan(qerror)):
+                logging.info("nan quantization error, exit train\n")
+
+                #sys.exit("quantization error=nan, exit train")
+
+        bmu[1] = np.sqrt(bmu[1] + fixed_euclidean_x2)
+        self._bmu = bmu
+
+    @timeit(logging.DEBUG)
+    def find_bmu(self, input_matrix, njb=1, nth=1):
+        """
+        Finds the best matching unit (bmu) for each input data from the input
+        matrix. It does all at once parallelizing the calculation instead of
+        going through each input and running it against the codebook.
+
+        :param input_matrix: numpy matrix representing inputs as rows and
+            features/dimension as cols
+        :param njb: number of jobs to parallelize the search
+        :returns: the best matching unit for each input
+        """
+        dlen = input_matrix.shape[0]
+        y2 = np.einsum('ij,ij->i', self.codebook.matrix, self.codebook.matrix)
+        if njb == -1:
+            njb = cpu_count()
+
+        pool = Pool(njb)
+        chunk_bmu_finder = _chunk_based_bmu_find
+
+        def row_chunk(part):
+            return part * dlen // njb
+
+        def col_chunk(part):
+            return min((part+1)*dlen // njb, dlen)
+
+        chunks = [input_matrix[row_chunk(i):col_chunk(i)] for i in range(njb)]
+        b = pool.map(lambda chk: chunk_bmu_finder(chk, self.codebook.matrix, y2, nth=nth), chunks)
+        pool.close()
+        pool.join()
+        bmu = np.asarray(list(itertools.chain(*b))).T
+        del b
+        return bmu
+
+    @timeit(logging.DEBUG)
+    def update_codebook_voronoi(self, training_data, bmu, neighborhood):
+        """
+        Updates the weights of each node in the codebook that belongs to the
+        bmu's neighborhood.
+
+        First finds the Voronoi set of each node. It needs to calculate a
+        smaller matrix.
+        Super fast comparing to classic batch training algorithm, it is based
+        on the implemented algorithm in som toolbox for Matlab by Helsinky
+        University.
+
+        :param training_data: input matrix with input vectors as rows and
+            vector features as cols
+        :param bmu: best matching unit for each input data. Has shape of
+            (2, dlen) where first row has bmu indexes
+        :param neighborhood: matrix representing the neighborhood of each bmu
+
+        :returns: An updated codebook that incorporates the learnings from the
+            input data
+        """
+        row = bmu[0].astype(int)
+        col = np.arange(self._dlen)
+        val = np.tile(1, self._dlen)
+        P = csr_matrix((val, (row, col)), shape=(self.codebook.nnodes,
+                       self._dlen))
+        S = P.dot(training_data)
+
+        # neighborhood has nnodes*nnodes and S has nnodes*dim
+        # ---> Nominator has nnodes*dim
+        nom = neighborhood.T.dot(S)
+        nV = P.sum(axis=1).reshape(1, self.codebook.nnodes)
+        denom = nV.dot(neighborhood.T).reshape(self.codebook.nnodes, 1)
+        new_codebook = np.divide(nom, denom)
+
+        return np.around(new_codebook, decimals=6)
+
+    def project_data(self, data):
+        """
+        Projects a data set to a trained SOM. It is based on nearest
+        neighborhood search module of scikitlearn, but it is not that fast.
+        """
+        clf = neighbors.KNeighborsClassifier(n_neighbors=1)
+        labels = np.arange(0, self.codebook.matrix.shape[0])
+        clf.fit(self.codebook.matrix, labels)
+
+        # The codebook values are all normalized
+        # we can normalize the input data based on mean and std of
+        # original data
+        data = self._normalizer.normalize_by(self.data_raw, data)
+
+        return clf.predict(data)
+
+    def predict_by(self, data, target, k=5, wt='distance'):
+        # here it is assumed that target is the last column in the codebook
+        # and data has dim-1 columns
+        dim = self.codebook.matrix.shape[1]
+        ind = np.arange(0, dim)
+        indX = ind[ind != target]
+        x = self.codebook.matrix[:, indX]
+        y = self.codebook.matrix[:, target]
+        n_neighbors = k
+        clf = neighbors.KNeighborsRegressor(n_neighbors, weights=wt)
+        clf.fit(x, y)
+
+        # The codebook values are all normalized
+        # we can normalize the input data based on mean and std of
+        # original data
+        dimdata = data.shape[1]
+
+        if dimdata == dim:
+            data[:, target] = 0
+            data = self._normalizer.normalize_by(self.data_raw, data)
+            data = data[:, indX]
+
+        elif dimdata == dim-1:
+            data = self._normalizer.normalize_by(self.data_raw[:, indX], data)
+
+        predicted_values = clf.predict(data)
+        predicted_values = self._normalizer.denormalize_by(
+            self.data_raw[:, target], predicted_values)
+        return predicted_values
+
+    def predict(self, x_test, k=5, wt='distance'):
+        """
+        Similar to SKlearn we assume that we have X_tr, Y_tr and X_test. Here
+        it is assumed that target is the last column in the codebook and data
+        has dim-1 columns
+
+        :param x_test: input vector
+        :param k: number of neighbors to use
+        :param wt: method to use for the weights
+            (more detail in KNeighborsRegressor docs)
+        :returns: predicted values for the input data
+        """
+        target = self.data_raw.shape[1]-1
+        x_train = self.codebook.matrix[:, :target]
+        y_train = self.codebook.matrix[:, target]
+        clf = neighbors.KNeighborsRegressor(k, weights=wt)
+        clf.fit(x_train, y_train)
+
+        # The codebook values are all normalized
+        # we can normalize the input data based on mean and std of
+        # original data
+        x_test = self._normalizer.normalize_by(
+            self.data_raw[:, :target], x_test)
+        predicted_values = clf.predict(x_test)
+
+        return self._normalizer.denormalize_by(
+            self.data_raw[:, target], predicted_values)
+
+    def find_k_nodes(self, data, k=5):
+        from sklearn.neighbors import NearestNeighbors
+        # we find the k most similar nodes to the input vector
+        neighbor = NearestNeighbors(n_neighbors=k)
+        neighbor.fit(self.codebook.matrix)
+
+        # The codebook values are all normalized
+        # we can normalize the input data based on mean and std of
+        # original data
+        return neighbor.kneighbors(
+            self._normalizer.normalize_by(self.data_raw, data))
+
+    def bmu_ind_to_xy(self, bmu_ind):
+        """
+        Translates a best matching unit index to the corresponding
+        matrix x,y coordinates.
+
+        :param bmu_ind: node index of the best matching unit
+            (number of node from top left node)
+        :returns: corresponding (x,y) coordinate
+        """
+        rows = self.codebook.mapsize[0]
+        cols = self.codebook.mapsize[1]
+
+        # bmu should be an integer between 0 to no_nodes
+        out = np.zeros((bmu_ind.shape[0], 3))
+        out[:, 2] = bmu_ind
+        out[:, 0] = rows-1-bmu_ind / cols
+        out[:, 0] = bmu_ind / cols
+        out[:, 1] = bmu_ind % cols
+
+        return out.astype(int)
+
+    def cluster(self, n_clusters=8):
+        import sklearn.cluster as clust
+        cl_labels = clust.KMeans(n_clusters=n_clusters).fit_predict(
+            self._normalizer.denormalize_by(self.data_raw,
+                                            self.codebook.matrix))
+        self.cluster_labels = cl_labels
+        return cl_labels
+
+    def predict_probability(self, data, target, k=5):
+        """
+        Predicts probability of the input data to be target
+
+        :param data: data to predict, it is assumed that 'target' is the last
+            column in the codebook, so data hould have dim-1 columns
+        :param target: target to predict probability
+        :param k: k parameter on KNeighborsRegressor
+        :returns: probability of data been target
+        """
+        dim = self.codebook.matrix.shape[1]
+        ind = np.arange(0, dim)
+        indx = ind[ind != target]
+        x = self.codebook.matrix[:, indx]
+        y = self.codebook.matrix[:, target]
+
+        clf = neighbors.KNeighborsRegressor(k, weights='distance')
+        clf.fit(x, y)
+
+        # The codebook values are all normalized
+        # we can normalize the input data based on mean and std of
+        # original data
+        dimdata = data.shape[1]
+
+        if dimdata == dim:
+            data[:, target] = 0
+            data = self._normalizer.normalize_by(self.data_raw, data)
+            data = data[:, indx]
+
+        elif dimdata == dim-1:
+            data = self._normalizer.normalize_by(self.data_raw[:, indx], data)
+
+        weights, ind = clf.kneighbors(data, n_neighbors=k,
+                                      return_distance=True)
+        weights = 1./weights
+        sum_ = np.sum(weights, axis=1)
+        weights = weights/sum_[:, np.newaxis]
+        labels = np.sign(self.codebook.matrix[ind, target])
+        labels[labels >= 0] = 1
+
+        # for positives
+        pos_prob = labels.copy()
+        pos_prob[pos_prob < 0] = 0
+        pos_prob *= weights
+        pos_prob = np.sum(pos_prob, axis=1)[:, np.newaxis]
+
+        # for negatives
+        neg_prob = labels.copy()
+        neg_prob[neg_prob > 0] = 0
+        neg_prob = neg_prob * weights * -1
+        neg_prob = np.sum(neg_prob, axis=1)[:, np.newaxis]
+
+        return np.concatenate((pos_prob, neg_prob), axis=1)
+
+    def node_activation(self, data, target=None, wt='distance'):
+        weights, ind = None, None
+
+        if not target:
+            clf = neighbors.KNeighborsClassifier(
+                n_neighbors=self.codebook.nnodes)
+            labels = np.arange(0, self.codebook.matrix.shape[0])
+            clf.fit(self.codebook.matrix, labels)
+
+            # The codebook values are all normalized
+            # we can normalize the input data based on mean and std of
+            # original data
+            data = self._normalizer.normalize_by(self.data_raw, data)
+            weights, ind = clf.kneighbors(data)
+
+            # Softmax function
+            weights = 1./weights
+
+        return weights, ind
+
+    def calculate_topographic_error(self):
+        bmus1 = self.find_bmu(self.data_raw, njb=1, nth=1)
+        bmus2 = self.find_bmu(self.data_raw, njb=1, nth=2)
+        bmus_gap = np.abs((self.bmu_ind_to_xy(np.array(bmus1[0]))[:, 0:2] - self.bmu_ind_to_xy(np.array(bmus2[0]))[:, 0:2]).sum(axis=1))
+        return np.mean(bmus_gap != 1)
+
+    def calculate_map_size(self, lattice):
+        """
+        Calculates the optimal map size given a dataset using eigenvalues and eigenvectors. Matlab ported
+        :lattice: 'rect' or 'hex'
+        :return: map sizes
+        """
+        D = self.data_raw.copy()
+        dlen = D.shape[0]
+        dim = D.shape[1]
+        munits = np.ceil(5 * (dlen ** 0.5))
+        A = np.ndarray(shape=[dim, dim]) + np.Inf
+
+        for i in range(dim):
+            D[:, i] = D[:, i] - np.mean(D[np.isfinite(D[:, i]), i])
+
+        for i in range(dim):
+            for j in range(dim):
+                c = D[:, i] * D[:, j]
+                c = c[np.isfinite(c)]
+                A[i, j] = sum(c) / len(c)
+                A[j, i] = A[i, j]
+
+        VS = np.linalg.eig(A)
+        eigval = sorted(np.linalg.eig(A)[0])
+        if eigval[-1] == 0 or eigval[-2] * munits < eigval[-1]:
+            ratio = 1
+        else:
+            ratio = np.sqrt(eigval[-1] / eigval[-2])
+
+        if lattice == "rect":
+            size1 = min(munits, round(np.sqrt(munits / ratio)))
+        else:
+            size1 = min(munits, round(np.sqrt(munits / ratio*np.sqrt(0.75))))
+
+        size2 = round(munits / size1)
+
+        return [int(size1), int(size2)]
+
+
+# Since joblib.delayed uses Pickle, this method needs to be a top level
+# method in order to be pickled
+# Joblib is working on adding support for cloudpickle or dill which will allow
+# class methods to be pickled
+# when that that comes out we can move this to SOM class
+def _chunk_based_bmu_find(input_matrix, codebook, y2, nth=1):
+    """
+    Finds the corresponding bmus to the input matrix.
+
+    :param input_matrix: a matrix of input data, representing input vector as
+                         rows, and vectors features/dimention as cols
+                         when parallelizing the search, the input_matrix can be
+                         a sub matrix from the bigger matrix
+    :param codebook: matrix of weights to be used for the bmu search
+    :param y2: <not sure>
+    """
+    dlen = input_matrix.shape[0]
+    nnodes = codebook.shape[0]
+    bmu = np.empty((dlen, 2))
+
+    # It seems that small batches for large dlen is really faster:
+    # that is because of ddata in loops and n_jobs. for large data it slows
+    # down due to memory needs in parallel
+    blen = min(50, dlen)
+    i0 = 0
+
+    while i0+1 <= dlen:
+        low = i0
+        high = min(dlen, i0+blen)
+        i0 = i0+blen
+        ddata = input_matrix[low:high+1]
+        d = np.dot(codebook, ddata.T)
+        d *= -2
+        d += y2.reshape(nnodes, 1)
+        bmu[low:high+1, 0] = np.argpartition(d, nth, axis=0)[nth-1]
+        bmu[low:high+1, 1] = np.partition(d, nth, axis=0)[nth-1]
+        del ddata
+
+    return bmu
+import matplotlib
+# from .view import MatplotView
+from matplotlib import pyplot as plt
+import numpy as np
+# import ipdb
+
+
+class MapView(MatplotView):
+
+    def _calculate_figure_params(self, som, which_dim, col_sz):
+
+        # add this to avoid error when normalization is not used
+        if som._normalizer:
+            codebook = som._normalizer.denormalize_by(som.data_raw, som.codebook.matrix)
+        else:
+            codebook = som.codebook.matrix
+
+        indtoshow, sV, sH = None, None, None
+
+        if which_dim == 'all':
+            dim = som._dim
+            row_sz = np.ceil(float(dim) / col_sz)
+            msz_row, msz_col = som.codebook.mapsize
+            ratio_hitmap = msz_row / float(msz_col)
+            ratio_fig = row_sz / float(col_sz)
+            indtoshow = np.arange(0, dim).T
+            sH, sV = 16, 16*ratio_fig*ratio_hitmap
+
+        elif type(which_dim) == int:
+            dim = 1
+            msz_row, msz_col = som.codebook.mapsize
+            ratio_hitmap = msz_row / float(msz_col)
+            indtoshow = np.zeros(1)
+            indtoshow[0] = int(which_dim)
+            sH, sV = 16, 16 * ratio_hitmap
+
+        elif type(which_dim) == list:
+            max_dim = codebook.shape[1]
+            dim = len(which_dim)
+            row_sz = np.ceil(float(dim) / col_sz)
+            msz_row, msz_col = som.codebook.mapsize
+            ratio_hitmap = msz_row / float(msz_col)
+            ratio_fig = row_sz / float(col_sz)
+            indtoshow = np.asarray(which_dim).T
+            sH, sV = 16, 16*ratio_fig*ratio_hitmap
+
+        no_row_in_plot = dim / col_sz + 1  # 6 is arbitrarily selected
+        if no_row_in_plot <= 1:
+            no_col_in_plot = dim
+        else:
+            no_col_in_plot = col_sz
+
+        axis_num = 0
+
+        width = sH
+        height = sV
+
+        return (width, height, indtoshow, no_row_in_plot, no_col_in_plot,
+                axis_num)
+
+
+class View2D(MapView):
+
+    def show(self, som, what='codebook', which_dim='all', cmap=None,
+             col_sz=None, desnormalize=False):
+        (self.width, self.height, indtoshow, no_row_in_plot, no_col_in_plot,
+         axis_num) = self._calculate_figure_params(som, which_dim, col_sz)
+        self.prepare()
+
+        if not desnormalize:
+            codebook = som.codebook.matrix
+        else:
+            codebook = som._normalizer.denormalize_by(som.data_raw, som.codebook.matrix)
+
+        if which_dim == 'all':
+            names = som._component_names[0]
+        elif type(which_dim) == int:
+            names = [som._component_names[0][which_dim]]
+        elif type(which_dim) == list:
+            names = som._component_names[0][which_dim]
+
+
+        while axis_num < len(indtoshow):
+            axis_num += 1
+            ax = plt.subplot(no_row_in_plot, no_col_in_plot, axis_num)
+            ind = int(indtoshow[axis_num-1])
+
+            min_color_scale = np.mean(codebook[:, ind].flatten()) - 1 * np.std(codebook[:, ind].flatten())
+            max_color_scale = np.mean(codebook[:, ind].flatten()) + 1 * np.std(codebook[:, ind].flatten())
+            min_color_scale = min_color_scale if min_color_scale >= min(codebook[:, ind].flatten()) else \
+                min(codebook[:, ind].flatten())
+            max_color_scale = max_color_scale if max_color_scale <= max(codebook[:, ind].flatten()) else \
+                max(codebook[:, ind].flatten())
+            norm = matplotlib.colors.Normalize(vmin=min_color_scale, vmax=max_color_scale, clip=True)
+
+            mp = codebook[:, ind].reshape(som.codebook.mapsize[0],
+                                          som.codebook.mapsize[1])
+            pl = plt.pcolor(mp[::-1], norm=norm)
+            plt.axis([0, som.codebook.mapsize[1], 0, som.codebook.mapsize[0]])
+            plt.title(names[axis_num - 1])
+            ax.set_yticklabels([])
+            ax.set_xticklabels([])
+            plt.colorbar(pl)
+
+        #plt.show()
+
+
+class View2DPacked(MapView):
+
+    def _set_axis(self, ax, msz0, msz1):
+        plt.axis([0, msz0, 0, msz1])
+        plt.axis('off')
+        ax.axis('off')
+
+    def show(self, som, what='codebook', which_dim='all', cmap=None,
+             col_sz=None):
+        if col_sz is None:
+            col_sz = 6
+        (self.width, self.height, indtoshow, no_row_in_plot, no_col_in_plot,
+         axis_num) = self._calculate_figure_params(som, which_dim, col_sz)
+        codebook = som.codebook.matrix
+
+        cmap = cmap or plt.cm.get_cmap('RdYlBu_r')
+        msz0, msz1 = som.codebook.mapsize
+        compname = som.component_names
+        if what == 'codebook':
+            h = .1
+            w = .1
+            self.width = no_col_in_plot*2.5*(1+w)
+            self.height = no_row_in_plot*2.5*(1+h)
+            self.prepare()
+
+            while axis_num < len(indtoshow):
+                axis_num += 1
+                ax = self._fig.add_subplot(no_row_in_plot, no_col_in_plot,
+                                           axis_num)
+                ax.axis('off')
+                ind = int(indtoshow[axis_num-1])
+                mp = codebook[:, ind].reshape(msz0, msz1)
+                plt.imshow(mp[::-1], norm=None, cmap=cmap)
+                self._set_axis(ax, msz0, msz1)
+
+                if self.show_text is True:
+                    plt.title(compname[0][ind])
+                    font = {'size': self.text_size}
+                    plt.rc('font', **font)
+        if what == 'cluster':
+            try:
+                codebook = getattr(som, 'cluster_labels')
+            except:
+                codebook = som.cluster()
+
+            h = .2
+            w = .001
+            self.width = msz0/2
+            self.height = msz1/2
+            self.prepare()
+
+            ax = self._fig.add_subplot(1, 1, 1)
+            mp = codebook[:].reshape(msz0, msz1)
+            plt.imshow(mp[::-1], cmap=cmap)
+
+            self._set_axis(ax, msz0, msz1)
+
+        plt.subplots_adjust(hspace=h, wspace=w)
+
+        plt.show()
+
+
+class View1D(MapView):
+
+    def show(self, som, what='codebook', which_dim='all', cmap=None,
+             col_sz=None):
+        (self.width, self.height, indtoshow, no_row_in_plot, no_col_in_plot,
+         axis_num) = self._calculate_figure_params(som, which_dim, col_sz)
+        self.prepare()
+
+        codebook = som.codebook.matrix
+
+        while axis_num < len(indtoshow):
+            axis_num += 1
+            plt.subplot(no_row_in_plot, no_col_in_plot, axis_num)
+            ind = int(indtoshow[axis_num-1])
+            mp = codebook[:, ind]
+            plt.plot(mp, '-k', linewidth=0.8)
+
+        #plt.show()
+import numpy as np
+import inspect
+import sys
+
+small = .000000000001
+
+
+class NeighborhoodFactory(object):
+
+    @staticmethod
+    def build(neighborhood_func):
+        for name, obj in inspect.getmembers(sys.modules[__name__]):
+            if inspect.isclass(obj):
+                if hasattr(obj, 'name') and neighborhood_func == obj.name:
+                    return obj()
+        else:
+            raise Exception(
+                "Unsupported neighborhood function '%s'" % neighborhood_func)
+
+
+class GaussianNeighborhood(object):
+
+    name = 'gaussian'
+
+    @staticmethod
+    def calculate(distance_matrix, radius, dim):
+        return np.exp(-1.0*distance_matrix/(2.0*radius**2)).reshape(dim, dim)
+
+    def __call__(self, *args, **kwargs):
+        return self.calculate(*args)
+
+
+class BubbleNeighborhood(object):
+
+    name = 'bubble'
+
+    @staticmethod
+    def calculate(distance_matrix, radius, dim):
+        def l(a, b):
+            c = np.zeros(b.shape)
+            c[a-b >= 0] = 1
+            return c
+
+        return l(radius,
+                 np.sqrt(distance_matrix.flatten())).reshape(dim, dim) + small
+
+    def __call__(self, *args, **kwargs):
+        return self.calculate(*args)
+from collections import Counter
+
+import matplotlib
+import numpy as np
+from matplotlib import pyplot as plt
+
+
+class BmuHitsView(MapView):
+    def _set_labels(self, cents, ax, labels, onlyzeros, fontsize):
+        for i, txt in enumerate(labels):
+            if onlyzeros == True:
+                if txt > 0:
+                    txt = ""
+            ax.annotate(txt, (cents[i, 1] + 0.5, cents[-(i+1), 0] + 0.5), va="center", ha="center", size=fontsize)
+
+    def show(self, som, anotate=True, onlyzeros=False, labelsize=7, cmap="jet", logaritmic = False):
+        (self.width, self.height, indtoshow, no_row_in_plot, no_col_in_plot,
+         axis_num) = self._calculate_figure_params(som, 1, 1)
+
+        self.prepare()
+        ax = plt.gca()
+        counts = Counter(som._bmu[0])
+        counts = [counts.get(x, 0) for x in range(som.codebook.mapsize[0] * som.codebook.mapsize[1])]
+        mp = np.array(counts).reshape(som.codebook.mapsize[0],
+                                      som.codebook.mapsize[1])
+
+        if not logaritmic:
+            norm = matplotlib.colors.Normalize(
+                vmin=0,
+                vmax=np.max(mp.flatten()),
+                clip=True)
+        else:
+            norm = matplotlib.colors.LogNorm(
+                vmin=1,
+                vmax=np.max(mp.flatten()))
+
+        msz = som.codebook.mapsize
+
+        cents = som.bmu_ind_to_xy(np.arange(0, msz[0] * msz[1]))
+
+        if anotate:
+            self._set_labels(cents, ax, counts, onlyzeros, labelsize)
+
+
+        pl = plt.pcolor(mp[::-1], norm=norm, cmap=cmap)
+
+        plt.axis([0, som.codebook.mapsize[1], 0, som.codebook.mapsize[0]])
+        ax.set_yticklabels([])
+        ax.set_xticklabels([])
+        plt.colorbar(pl)
+
+        plt.show()
+# -*- coding: utf-8 -*-
+
 # Ativar qd rodar localmente
 # import ProcessTexts as preprocessor
 # import Matrix as mtx
@@ -589,6 +2164,7 @@ class KMeans():
 # import KMeansDefault as kmeans_default
 
 import numpy as np
+# from . import dotmap, histogram, hitmap, mapview, umatrix
 import os
 import string
 import tensorflow as tf
@@ -620,15 +2196,24 @@ if __name__ == "__main__":
 		# ---------------------
 		# SOM
 		print('----- Iniciando Processamento SOM -----')
-		map_dim = 20
-		som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
-		som.random_weights_init(dados)
-		som.train_batch(dados, 10000)
+		# map_dim = 20
+		# som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1, learning_rate=0.5)
+		# som.random_weights_init(dados)
+		# som.train_batch(dados, 10000)
 		# print(som.activation_response(dados))
 		# print(som.quantization_error(dados))
 		# print(som.win_map(dados))
 		# print(som.distance_map(dados))
-		som.plot2(dados)
+		# som.plot2(dados)
+
+		mapsize = [50,50]
+		som = SOMFactory.build(dados, mapsize, mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='pca', neighborhood='gaussian', training='batch')
+		som.train(n_job=5, verbose='info')  # verbose='debug' will print more, and verbose=None wont print anything
+		v = View2DPacked(50, 50, 'test',text_size=8)
+		# could be done in a one-liner: sompy.mapview.View2DPacked(300, 300, 'test').show(som)
+		v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6) #which_dim='all' default
+		v.save('2d_packed_test')
+
 
 	else:
 		preprocessor = ProcessTexts(texts=['bbc_local'])
