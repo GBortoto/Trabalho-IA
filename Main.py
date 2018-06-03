@@ -49,18 +49,25 @@ if __name__ == "__main__":
 		# print(som.distance_map(dados))
 		# som.plot2(dados)
 
-		mapsize = [50,50]
-		som = SOMFactory.build(dados, mapsize, mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='pca', neighborhood='gaussian', training='batch')
+		mapsize = [100,100]
+		som = SOMFactory.build(dados, mapsize, mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='random', neighborhood='gaussian', training='batch')
 		som.train(n_job=5, verbose='info')  # verbose='debug' will print more, and verbose=None wont print anything
-		v = View2DPacked(50, 50, 'test',text_size=8)
-		# could be done in a one-liner: sompy.mapview.View2DPacked(300, 300, 'test').show(som)
-		v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6) #which_dim='all' default
-		v.save('2d_packed_test')
 
-
-	else:
-		preprocessor = ProcessTexts(texts=['bbc_local'])
-		print('----- Transformando Tokens em Matriz -----')
-		matrix = TransformMatrix(preprocessor.tokens)
-		print('----- Resultados do bag of words -----')
-		data = matrix.get_matrix(type='tf-idf')
+		# Plots --------------
+		# v = View2DPacked(50, 50, 'test',text_size=8)
+		# v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6) #which_dim='all' default
+		# v.save('2d_packed_test')
+		# som.component_names = ['1','2']
+		# v = View2DPacked(50, 50, 'test',text_size=8)
+		# v.show(som, what='codebook', which_dim='all', cmap='jet', col_sz=6) #which_dim='all' default
+		# v.save('2d_packed_test2')
+		# v = View2DPacked(2, 2, 'test',text_size=8)
+		# cl = som.cluster(n_clusters=10)
+		# getattr(som, 'cluster_labels')
+		# h = HitMapView(10, 10, 'hitmap', text_size=8, show_text=True)
+		# h.show(som)
+		# h.save('2d_packed_test3')
+		# u = UMatrixView(50, 50, 'umatrix', show_axis=True, text_size=8, show_text=True)
+		# UMAT  = u.build_u_matrix(som, distance=1, row_normalized=False)
+		# UMAT = u.show(som, distance2=1, row_normalized=False, show_data=True, contooor=True, blob=False)
+		# u.save('2d_packed_test4')
