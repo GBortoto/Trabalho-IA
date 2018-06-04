@@ -12,16 +12,24 @@ import os
 import string
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from math import inf as positive_infinite
+from scipy.spatial import distance
 from sklearn.cluster import KMeans as KMeansDefault
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.preprocessing import StandardScaler
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
+<<<<<<< HEAD
 from sklearn.decomposition import PCA
 import pylab as pl
 
 
+||||||| merged common ancestors
+
+=======
+>>>>>>> 87965afeaed30036cd8d170b8491f5608fcee9ae
 
 if __name__ == "__main__":
 	env = 'kaggle'
@@ -37,24 +45,34 @@ if __name__ == "__main__":
 		# ---------------------
 		# K-means
 		print('----- Iniciando Processamento K-means -----')
+<<<<<<< HEAD
+		#kmeans = KMeanspp(dados)
 		kmeans = KMeans(dados)
 		kmeans.roda_kmeans(3)
 
+		
+||||||| merged common ancestors
+
+=======
+
+		
+>>>>>>> 87965afeaed30036cd8d170b8491f5608fcee9ae
+
 		# ---------------------
 		# SOM
-		print('----- Iniciando Processamento SOM -----')
+		# print('----- Iniciando Processamento SOM -----')
 
-		mapsize = [25,25]
-		som = SOMFactory.build(dados, mapsize, mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='random', neighborhood='gaussian', training='batch')
-		som.train(n_job=3, verbose='info')
+		# mapsize = [25,25]
+		# som = SOMFactory.build(dados, mapsize, mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='random', neighborhood='gaussian', training='batch')
+		# som.train(n_job=3, verbose='info')
 
 		# ---------------------
 		# Plots
-		v = View2DPacked(25, 25, 'SOM Plots',text_size=8)
+		# v = View2DPacked(25, 25, 'SOM Plots',text_size=8)
 		# v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6) #which_dim='all' default
-		v.show(som, what='codebook', which_dim=[0,1,2,3,4,5], cmap=None, col_sz=6) #which_dim='all' default
-		v.show(som, what='codebook', which_dim='all', cmap='jet', col_sz=6) #which_dim='all' default
-		v.save('2d_packed_test2')
+		# v.show(som, what='codebook', which_dim=[0,1,2,3,4,5], cmap=None, col_sz=6) #which_dim='all' default
+		# v.show(som, what='codebook', which_dim='all', cmap='jet', col_sz=6) #which_dim='all' default
+		# v.save('2d_packed_test2')
 		# som.component_names = ['1','2']
 		# v = View2DPacked(2, 2, 'test',text_size=8)
 		# cl = som.cluster(n_clusters=10)
