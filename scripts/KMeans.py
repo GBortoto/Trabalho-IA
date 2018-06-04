@@ -91,9 +91,13 @@ class KMeans():
 
         return centroid_mais_proximo
 
-    def roda_kmeans(self, k_centroids, n_iteracoes = 1000, erro = 0.1):
+    def roda_kmeans(self, k_centroids, n_iteracoes = 1000, erro = 0.1, centroid_aleatorio = None):
         """."""
-        self.inicia_centroides(k_centroids)
+        if centroid_aleatorio is None:
+            self.inicia_centroides(k_centroids)
+        else:
+            self.centroids = centroid_aleatorio
+
         MediaDistAnterior = 0.0
         MediaDistAtual = positive_infinite
 
