@@ -21,15 +21,6 @@ from sklearn.preprocessing import StandardScaler
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
-<<<<<<< HEAD
-from sklearn.decomposition import PCA
-import pylab as pl
-
-
-||||||| merged common ancestors
-
-=======
->>>>>>> 87965afeaed30036cd8d170b8491f5608fcee9ae
 
 if __name__ == "__main__":
 	env = 'kaggle'
@@ -45,18 +36,6 @@ if __name__ == "__main__":
 		# ---------------------
 		# K-means
 		print('----- Iniciando Processamento K-means -----')
-<<<<<<< HEAD
-		#kmeans = KMeanspp(dados)
-		kmeans = KMeans(dados)
-		kmeans.roda_kmeans(3)
-
-		
-||||||| merged common ancestors
-
-=======
-
-		
->>>>>>> 87965afeaed30036cd8d170b8491f5608fcee9ae
 
 		# ---------------------
 		# SOM
