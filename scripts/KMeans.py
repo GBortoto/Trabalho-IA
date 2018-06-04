@@ -89,20 +89,21 @@ class KMeans():
         MediaDistAtual = positive_infinite
 
         nIteracoes = 0
-        while((nIteracoes < n_iteracoes) and abs(MediaDistAnterior - self.MediaDistAtual) > erro):
-            #Só executa se a lista de centroids não tiver sido determinada na ultima iteração
+        while((nIteracoes < n_iteracoes) and abs(MediaDistAnterior - MediaDistAtual) > erro):
+            # Só executa se a lista de centroids não tiver sido determinada na ultima iteração
             nIteracoes += 1
-            print("quantidade de iterações igual à " +str(nIteracoes))
+            print("quantidade de iterações igual à " + str(nIteracoes))
+            
             if(self.lista_centroid_mais_proximos is None):
-                self.labels = self.busca_centroides_mais_proximo()
-                self.centroids = self.movimenta_centroides(self.labels)
-            else:
-                #movimenta os centroids  a partir da lista adquirida na ultima iteração
-                self.centroids = self.movimenta_centroides(self.lista_centroid_mais_proximos)
-            MediaDistAnterior = self.MediaDistAtual
-            #atualiza lista de centroids mais proximos e calcula a média da distancia entre os pontos e
-            #os centroids mais proximos
-            self.MediaDistAtual = self.calculaMediaDistancias(self.lista_centroid_mais_proximos)
+                self.lista_centroid_mais_proximos = self.busca_centroides_mais_proximo()
+            
+            # Movimenta os centroids  a partir da lista adquirida na ultima iteração
+            self.centroids = self.movimenta_centroides(self.lista_centroid_mais_proximos)
+            MediaDistAnterior = MediaDistAtual
+            
+            # Atualiza lista de centroids mais proximos e calcula a média da distancia entre os pontos
+            # e os centroids mais proximos
+            MediaDistAtual = self.calculaMediaDistancias(self.lista_centroid_mais_proximos)
 
 
     def movimenta_centroides(self, closest):

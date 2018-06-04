@@ -13,13 +13,14 @@ import string
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from math import inf as positive_infinite
+from scipy.spatial import distance
 from sklearn.cluster import KMeans as KMeansDefault
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.preprocessing import StandardScaler
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
-from sklearn.decomposition import PCA
 
 if __name__ == "__main__":
 	env = 'kaggle'
