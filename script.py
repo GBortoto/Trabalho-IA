@@ -385,6 +385,121 @@ class DotMapView(MatplotView):
 
         plt.tight_layout()
         plt.subplots_adjust(hspace=.16, wspace=.05)
+class KMeanspp():
+    """."""
+
+    def __init__(self, points, type_of_kmeans='default'):
+        """Generate a KMeans model for a specific 'k' and a n-matrix of point.
+        It will return a model which represents the k-means cluster function
+        """
+        self.type_of_kmeans = type_of_kmeans
+        self.points = points
+        self.MediaDistAtual = 100000000000000000000.0
+        self.erro = 0.1
+        self.labels = []
+        self.lista_centroid_mais_proximos = None
+
+    def inicia_centroides(self, k_centroids):
+        """."""
+        centroids = self.points.copy()
+        np.random.shuffle(centroids)
+        self.centroids = centroids[:k_centroids]
+
+    def busca_centroides_mais_proximo(self):
+        """."""
+        centroids_redimensionado = self.centroids[:, np.newaxis, :]
+        diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
+        distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
+        centroid_mais_proximo = np.argmin(distancias, axis=0)
+        return centroid_mais_proximo
+
+    def inicia_kmeanspp(self, centroids_pedidos):
+        """."""
+        # Gera uma lista de probabilidade para cada ponto
+        lista_distancias_normalizadas = self.points.shape[1]
+        # Rodamos um loop o numero de vezes que queremos de centroids
+        for novo_centroid in range(0, centroids_pedidos):
+            print("-- Escolhendo centroide " + str(novo_centroid))
+            # Redimensionamos o array com os centroids
+            centroids_redimensionado = self.centroids[:, np.newaxis, :]
+            print(centroids_redimensionado.shape)
+            # Elevamos a diferença de todos os pontos, a um centroi especifico, ao quadrado
+            diffCordenadasAoQuadrado = (self.points - centroids_redimensionado[novo_centroid]) ** 2
+            # Calculamos a soma da raiz para as diferenças em cada dimensão de um ponto
+            distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=1))
+            print('distancias')
+            print(distancias.shape)
+            # Calculamos a distancia total
+            distancia_total = np.sum(distancias, axis=0)
+            # Normalizamos as distancias
+            lista_distancias_normalizadas = lista_distancias_normalizadas + (distancias / distancia_total)
+            print('lista distancias')
+            print(lista_distancias_normalizadas.shape)
+            # Rodamos a probabilidade
+            ponto_escolhido = np.random.choice(self.points, 1, lista_distancias_normalizadas)
+            # Adicionamos um novo centroid com base no ponto que foi selecionado
+            print('probabilidade escolhida: ')
+            print(ponto_escolhido)
+            np.append(self.centroids, np.array(ponto_escolhido)[np.newaxis, :][np.newaxis, :], axis=0)
+            print(self.centroids.shape)
+
+    def calcula_probabilidade(self, c1, n_centroid, list_prob):
+        """."""
+        # Definimos a distancia euclidiana
+        distancia_euclidiana = lambda x, y: np.sqrt(((x-y)**2).sum())
+        dist_total = 0
+
+        # Para cada ponto
+        for indice, points in enumerate(self.points.ravel()):
+            # Calculamos sua distancia euclidiana até o ultimo centroid
+            d = distancia_euclidiana(points, c1[n_centroid])**2
+            # Adicionamos a distancia a nossa lista de probabilidade
+            list_prob[indice] = list_prob[indice] + d
+            # Somamos a distancia total
+            dist_total = dist_total + d
+
+        # Normalizamos a lista de probabilidade dividindo pela distancia total
+        list_prob = np.array(list_prob)/dist_total
+
+        return list_prob
+
+    def roda_kmeans(self, k_centroids):
+        """."""
+        self.inicia_centroides(2)
+        self.inicia_kmeanspp(k_centroids-1)
+
+        MediaDistAnterior = 0.0
+        nIteracoes = 0
+        while(abs(MediaDistAnterior - self.MediaDistAtual) > self.erro):
+            nIteracoes += 1
+            print("quantidade de iterações igual à " + str(nIteracoes))
+            if(self.lista_centroid_mais_proximos is None):
+                self.labels = self.busca_centroides_mais_proximo()
+                self.centroids = self.movimenta_centroides(self.labels)
+            else:
+                self.centroids = self.movimenta_centroides(self.lista_centroid_mais_proximos)
+            MediaDistAnterior = self.MediaDistAtual
+            self.MediaDistAtual = self.calculaMediaDistancias(self.lista_centroid_mais_proximos)
+
+    def movimenta_centroides(self, closest):
+        """."""
+        return np.array([self.points[closest == k].mean(axis=0) for k in range(self.centroids.shape[0])])
+
+    def calculaMediaDistancias(self, centroid_mais_proximo):
+        """."""
+        centroids_redimensionado = self.centroids[:, np.newaxis, :]
+        diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
+        distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
+        centroid_mais_proximo = np.argmin(distancias, axis=0)
+
+        listaDistancias = [0.0]*len(self.centroids)
+        indexlista = 0
+        for centroid in centroid_mais_proximo:
+            listaDistancias[centroid] += distancias[centroid][indexlista]
+            indexlista += 1
+        for indice in range(0, len(listaDistancias)):
+            listaDistancias[indice] = listaDistancias[indice]/sum(centroid_mais_proximo == indice)
+        return sum(listaDistancias)
 # -*- coding: utf-8 -*-
 
 """Implementação minimalista do self-organizing maps.
@@ -1077,19 +1192,6 @@ class KMeans():
 
     def busca_centroides_mais_proximo(self):
         """."""
-        #É adicionado uma nova dimensão aos centroids de forma que seja possivel
-        #calcular as diferenças entre as coordenadas para todos os centroids de uma vez
-        #Ex:
-        #Antes de ser redimensionado  :  centroids                = [[1,2,3][4,5,6][7,8,9]]
-        #Depois de ser redimensionado :  centroids_redimensionado = [[[1,2,3],[4,5,6],[7,8,9]]]
-        #dessa forma podemos obter as diferenças entre as cordenadas em uma unica operação:
-        #supondo p1 seja um ponto : [0,1,2]
-        #temos: centroids_redimensionado - p1 = [
-        #                     [1,1,1], -> diferença das cordenadas do ponto 1 para o centroid 1
-        #                     [4,4,4], -> diferença das cordenadas do ponto 1 para o centroid 2
-        #                     [7,7,7]  -> diferença das cordenadas do ponto 1 para o centroid 3
-        #                   ]
-        #
         centroids_redimensionado = self.centroids[:, np.newaxis , :]
         #eleva-se a diferença ao quadrado
         diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
@@ -1139,7 +1241,7 @@ class KMeans():
             listaDistancias[centroid] += distancias[centroid][indexlista]
             indexlista += 1
         #tira a média da distância entre os pontos e os centroids
-        for indice in range(0 , len(listaDistancias)):
+        for indice in range(0, len(listaDistancias)):
             listaDistancias[indice] = listaDistancias[indice]/sum(centroid_mais_proximo == indice)
         return sum(listaDistancias)
 """."""
@@ -1215,23 +1317,34 @@ class SOM(object):
         else:
             self._data = data
 
+        # Objeto responsavel por normalizar os dados
         self._normalizer = normalizer
+
+        # Dimensao é igual ao #colunas do dataset
         self._dim = data.shape[1]
+
+        # Length é igual ao #linhas do dataset
         self._dlen = data.shape[0]
+
+        # Defnimos como None o data_label e o neuronio BMU
         self._dlabel = None
         self._bmu = None
 
-        self.name = name
+        # Guardamos os dados puros
         self.data_raw = data
+
+        # Guarda objeto responsável por fazer a função de vizinhança
         self.neighborhood = neighborhood
         self.mapshape = mapshape
         self.initialization = initialization
         self.mask = mask or np.ones([1, self._dim])
-        mapsize = self.calculate_map_size(lattice) if not mapsize else mapsize
         self.codebook = Codebook(mapsize, lattice)
         self.training = training
         self._component_names = self.build_component_names() if component_names is None else [component_names]
         self._distance_matrix = self.calculate_map_dist()
+        self.name = name
+
+        mapsize = self.calculate_map_size(lattice) if not mapsize else mapsize
 
     @property
     def component_names(self):
@@ -1726,7 +1839,6 @@ class SOM(object):
                 A[i, j] = sum(c) / len(c)
                 A[j, i] = A[i, j]
 
-        VS = np.linalg.eig(A)
         eigval = sorted(np.linalg.eig(A)[0])
         if eigval[-1] == 0 or eigval[-2] * munits < eigval[-1]:
             ratio = 1
@@ -2105,22 +2217,25 @@ if __name__ == "__main__":
 		# ---------------------
 		# K-means
 		print('----- Iniciando Processamento K-means -----')
-		kmeans = KMeans(dados)
+		# kmeans = KMeans(dados)
+		kmeans = KMeanspp(dados)
+		kmeans.roda_kmeans(5)
 
 		# ---------------------
 		# SOM
-		print('----- Iniciando Processamento SOM -----')
+		# print('----- Iniciando Processamento SOM -----')
 
-		mapsize = [25,25]
-		som = SOMFactory.build(dados, mapsize, mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='random', neighborhood='gaussian', training='batch')
-		som.train(n_job=3, verbose='info')
+		# mapsize = [25,25]
+		# som = SOMFactory.build(dados, mapsize, mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='random', neighborhood='gaussian', training='batch')
+		# som.train(n_job=3, verbose='info')
 
 		# ---------------------
 		# Plots
-		v = View2DPacked(25, 25, 'SOM Plots',text_size=8)
+		# v = View2DPacked(25, 25, 'SOM Plots',text_size=8)
 		# v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6) #which_dim='all' default
-		v.show(som, what='codebook', which_dim='all', cmap='jet', col_sz=6) #which_dim='all' default
-		v.save('2d_packed_test2')
+		# v.show(som, what='codebook', which_dim=[0,1,2,3,4,5], cmap=None, col_sz=6) #which_dim='all' default
+		# v.show(som, what='codebook', which_dim='all', cmap='jet', col_sz=6) #which_dim='all' default
+		# v.save('2d_packed_test2')
 		# som.component_names = ['1','2']
 		# v = View2DPacked(2, 2, 'test',text_size=8)
 		# cl = som.cluster(n_clusters=10)

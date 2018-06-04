@@ -70,19 +70,6 @@ class KMeans():
 
     def busca_centroides_mais_proximo(self):
         """."""
-        #É adicionado uma nova dimensão aos centroids de forma que seja possivel
-        #calcular as diferenças entre as coordenadas para todos os centroids de uma vez
-        #Ex:
-        #Antes de ser redimensionado  :  centroids                = [[1,2,3][4,5,6][7,8,9]]
-        #Depois de ser redimensionado :  centroids_redimensionado = [[[1,2,3],[4,5,6],[7,8,9]]]
-        #dessa forma podemos obter as diferenças entre as cordenadas em uma unica operação:
-        #supondo p1 seja um ponto : [0,1,2]
-        #temos: centroids_redimensionado - p1 = [
-        #                     [1,1,1], -> diferença das cordenadas do ponto 1 para o centroid 1
-        #                     [4,4,4], -> diferença das cordenadas do ponto 1 para o centroid 2
-        #                     [7,7,7]  -> diferença das cordenadas do ponto 1 para o centroid 3
-        #                   ]
-        #
         centroids_redimensionado = self.centroids[:, np.newaxis , :]
         #eleva-se a diferença ao quadrado
         diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
@@ -132,6 +119,6 @@ class KMeans():
             listaDistancias[centroid] += distancias[centroid][indexlista]
             indexlista += 1
         #tira a média da distância entre os pontos e os centroids
-        for indice in range(0 , len(listaDistancias)):
+        for indice in range(0, len(listaDistancias)):
             listaDistancias[indice] = listaDistancias[indice]/sum(centroid_mais_proximo == indice)
         return sum(listaDistancias)
