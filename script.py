@@ -385,6 +385,8 @@ class DotMapView(MatplotView):
 
         plt.tight_layout()
         plt.subplots_adjust(hspace=.16, wspace=.05)
+from random import randint
+
 class KMeanspp():
     """."""
 
@@ -416,10 +418,11 @@ class KMeanspp():
     def inicia_kmeanspp(self, centroids_pedidos):
         """."""
         # Gera uma lista de probabilidade para cada ponto
-        lista_distancias_normalizadas = self.points.shape[1]
+        lista_distancias_normalizadas = np.zeros(self.points.shape[0])
+        # print(self.points.shape)
         # Rodamos um loop o numero de vezes que queremos de centroids
         for novo_centroid in range(0, centroids_pedidos):
-            print("-- Escolhendo centroide " + str(novo_centroid))
+            print("-- Escolhendo centroide " + str(novo_centroid+2))
             # Redimensionamos o array com os centroids
             centroids_redimensionado = self.centroids[:, np.newaxis, :]
             print(centroids_redimensionado.shape)
@@ -427,45 +430,35 @@ class KMeanspp():
             diffCordenadasAoQuadrado = (self.points - centroids_redimensionado[novo_centroid]) ** 2
             # Calculamos a soma da raiz para as diferenças em cada dimensão de um ponto
             distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=1))
-            print('distancias')
-            print(distancias.shape)
+            # print('distancias')
+            # print(distancias.shape)
+            # print(distancias)
             # Calculamos a distancia total
             distancia_total = np.sum(distancias, axis=0)
             # Normalizamos as distancias
+            lista_distancias_normalizadas = np.zeros(self.points.shape[0])
             lista_distancias_normalizadas = lista_distancias_normalizadas + (distancias / distancia_total)
-            print('lista distancias')
-            print(lista_distancias_normalizadas.shape)
+            # print('lista distancias')
+            # print(lista_distancias_normalizadas.shape)
+            # print(np.sum(lista_distancias_normalizadas, axis=0))
             # Rodamos a probabilidade
-            ponto_escolhido = np.random.choice(self.points, 1, lista_distancias_normalizadas)
+            # print('Escolha probabilistica!')
+            rand = random.choice(np.array(self.points.shape[0]), p=lista_distancias_normalizadas)
+            # print(rand)
+            # print(np.random.choice(lista_distancias_normalizadas, p=lista_distancias_normalizadas))
             # Adicionamos um novo centroid com base no ponto que foi selecionado
-            print('probabilidade escolhida: ')
-            print(ponto_escolhido)
-            np.append(self.centroids, np.array(ponto_escolhido)[np.newaxis, :][np.newaxis, :], axis=0)
-            print(self.centroids.shape)
-
-    def calcula_probabilidade(self, c1, n_centroid, list_prob):
-        """."""
-        # Definimos a distancia euclidiana
-        distancia_euclidiana = lambda x, y: np.sqrt(((x-y)**2).sum())
-        dist_total = 0
-
-        # Para cada ponto
-        for indice, points in enumerate(self.points.ravel()):
-            # Calculamos sua distancia euclidiana até o ultimo centroid
-            d = distancia_euclidiana(points, c1[n_centroid])**2
-            # Adicionamos a distancia a nossa lista de probabilidade
-            list_prob[indice] = list_prob[indice] + d
-            # Somamos a distancia total
-            dist_total = dist_total + d
-
-        # Normalizamos a lista de probabilidade dividindo pela distancia total
-        list_prob = np.array(list_prob)/dist_total
-
-        return list_prob
+            ponto_escolhido = self.points[rand]
+            ponto_escolhido = ponto_escolhido[np.newaxis, :]
+            # print('Comparacao')
+            # print(self.centroids.shape)
+            # print(ponto_escolhido.shape)
+            self.centroids = np.append(self.centroids, ponto_escolhido, axis=0)
+            # print('Resultado')
+            # print(self.centroids.shape)
 
     def roda_kmeans(self, k_centroids):
         """."""
-        self.inicia_centroides(2)
+        self.inicia_centroides(1)
         self.inicia_kmeanspp(k_centroids-1)
 
         MediaDistAnterior = 0.0
@@ -1130,8 +1123,6 @@ class KMeans():
         """
         self.type_of_kmeans = type_of_kmeans
         self.points = points
-        self.MediaDistAtual = 100000000000000000000.0
-        self.erro = 0.1
         self.labels = []
         self.lista_centroid_mais_proximos = None
 
@@ -1202,12 +1193,18 @@ class KMeans():
 
         return centroid_mais_proximo
 
-    def roda_kmeans(self, k_centroids):
+    def roda_kmeans(self, k_centroids, n_iteracoes = 1000, erro = 0.1, centroid_aleatorio = None):
         """."""
-        self.inicia_centroides(k_centroids)
+        if centroid_aleatorio is None:
+            self.inicia_centroides(k_centroids)
+        else:
+            self.centroids = centroid_aleatorio
+
         MediaDistAnterior = 0.0
+        MediaDistAtual = positive_infinite
+
         nIteracoes = 0
-        while(abs(MediaDistAnterior- self.MediaDistAtual) > self.erro):
+        while((nIteracoes < n_iteracoes) and abs(MediaDistAnterior - self.MediaDistAtual) > erro):
             #Só executa se a lista de centroids não tiver sido determinada na ultima iteração
             nIteracoes += 1
             print("quantidade de iterações igual à " +str(nIteracoes))
@@ -2195,6 +2192,7 @@ import os
 import string
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from math import inf as positive_infinite
 from sklearn.cluster import KMeans as KMeansDefault
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
