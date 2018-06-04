@@ -12,6 +12,7 @@ import os
 import string
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from math import inf as positive_infinite
 from sklearn.cluster import KMeans as KMeansDefault
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer

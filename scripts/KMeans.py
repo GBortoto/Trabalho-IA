@@ -8,8 +8,6 @@ class KMeans():
         """
         self.type_of_kmeans = type_of_kmeans
         self.points = points
-        self.MediaDistAtual = 100000000000000000000.0
-        self.erro = 0.1
         self.labels = []
         self.lista_centroid_mais_proximos = None
 
@@ -80,12 +78,18 @@ class KMeans():
 
         return centroid_mais_proximo
 
-    def roda_kmeans(self, k_centroids):
+    def roda_kmeans(self, k_centroids, n_iteracoes = 1000, erro = 0.1, centroid_aleatorio = None):
         """."""
-        self.inicia_centroides(k_centroids)
+        if centroid_aleatorio is None:
+            self.inicia_centroides(k_centroids)
+        else:
+            self.centroids = centroid_aleatorio
+
         MediaDistAnterior = 0.0
+        MediaDistAtual = positive_infinite
+
         nIteracoes = 0
-        while(abs(MediaDistAnterior- self.MediaDistAtual) > self.erro):
+        while((nIteracoes < n_iteracoes) and abs(MediaDistAnterior - self.MediaDistAtual) > erro):
             #Só executa se a lista de centroids não tiver sido determinada na ultima iteração
             nIteracoes += 1
             print("quantidade de iterações igual à " +str(nIteracoes))
