@@ -39,6 +39,7 @@ class ProcessTexts():
     def _process_text(self, type='Porter'):
         print("----- Tokenizando Sentencas e Palavras -----")
         table = str.maketrans('', '', string.punctuation)
+        table2 = str.maketrans('', '', string.digits)
         stop_words = set(stopwords.words('english'))
         self.tokens = []
 
@@ -50,7 +51,7 @@ class ProcessTexts():
             # Para cada sentenca
             for sentence in sentences:
                 # Tokenize por palavras, elimine stop words, pontuação e de lower
-                stripped = [word.translate(table).lower() for word in word_tokenize(sentence) if not word in stop_words]
+                stripped = [word.translate(table).translate(table2).lower() for word in word_tokenize(sentence) if not word in stop_words]
                 stemmerized = self._normalize_text(tokens=stripped, type=type)
                 tokens_of_sentence = tokens_of_sentence + stemmerized
             self.tokens.append(tokens_of_sentence)
