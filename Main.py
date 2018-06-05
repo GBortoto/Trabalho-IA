@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
 		# ---------------------
 		# K-means
-		print('----- Iniciando Processamento K-means -----')
+		# print('----- Iniciando Processamento K-means -----')
 		# kmeans = KMeans(dados)
 		# kmeans.roda_kmeans(3/)
 
@@ -41,12 +41,12 @@ if __name__ == "__main__":
 
 		# ---------------------
 		# SOM
-		# print('----- Iniciando Processamento SOM -----')
+		print('----- Iniciando Processamento SOM -----')
 
-		# mapsize = [25,25]
-		# som = SOMFactory.build(dados, mapsize, mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='random', neighborhood='gaussian', training='batch')
-		# som.train(n_job=3, verbose='info')
-
+		map_dim = 16
+		som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1)
+		som.random_weights_init(dados)
+		som.train_batch(dados, 100)
 		# ---------------------
 		# Plots
 		# v = View2DPacked(25, 25, 'SOM Plots',text_size=8)
