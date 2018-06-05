@@ -1,5 +1,5 @@
 from numpy import dot
-import numpy.linalg import norm
+from numpy.linalg import norm
 
 class KMeans():
     """."""
@@ -36,7 +36,7 @@ class KMeans():
             print(distancias.shape)
 
 
-        if distance_type == 'cosine_similarity':
+        if self.distance_type == 'cosine_similarity':
             cos_sim = dot(self.points, centroids_redimensionado)/(norm(self.points)*norm(centroids_redimensionado))
             centroid_mais_proximo = np.argmin(1-cos_sim, axis=0)
             print('Shape distancia cosseno')

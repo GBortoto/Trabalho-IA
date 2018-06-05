@@ -30,9 +30,15 @@ if __name__ == "__main__":
 		# ---------------------
 		# K-means
 		print('----- Iniciando Processamento K-means -----')
-		kmeans = KMeans(dados)
-		kmeans.roda_kmeans(3)
-		
+		# kmeans = KMeans(dados)
+		# kmeans.roda_kmeans(3/)
+
+		# kmeans = KMeans(dados, type_of_kmeans='kmeans++')
+		# kmeans.roda_kmeans(3)
+
+		# kmeans = KMeans(dados, type_of_kmeans='kmeans++', distance_type='cosine_similarity')
+		# kmeans.roda_kmeans(3)
+
 		# ---------------------
 		# SOM
 		# print('----- Iniciando Processamento SOM -----')
