@@ -69,44 +69,23 @@ class MiniSom(object):
             raise ValueError(msg % (neighborhood_function, ', '.join(neig_functions.keys())))
         self.neighborhood = neig_functions[neighborhood_function]
 
-    # Inicia pesos aleatoriamente
-    def random_weights_init(self, data):
-        """Initialize the weights of the SOM picking random samples from data."""
-        it = nditer(self._activation_map, flags=['multi_index'])
-        while not it.finished:
-            rand_i = self._random_generator.randint(len(data))
-            self._weights[it.multi_index] = data[rand_i]
-            norm = fast_norm(self._weights[it.multi_index])
-            self._weights[it.multi_index] = self._weights[it.multi_index]/norm
-            it.iternext()
-        self.starting_weights = self.get_weights().copy()
-
     def get_weights(self):
         """Return the weights of the neural network."""
         return self._weights
 
-    # Parametro T que será usado para ajustar o sigma e alfa
-    def _init_T(self, num_iteration):
-        """Initializes the parameter T needed to adjust the learning rate"""
-        # keeps the learning rate nearly constant
-        # for the last half of the iterations
-        self.T = num_iteration/2
+    def _activate(self, x):
+        """Update matrix activation_map, in this matrix the element i,j is the response of the neuron i,j to x."""
+        s = subtract(x, self._weights)  # x - w
+        it = nditer(self._activation_map, flags=['multi_index'])
+        while not it.finished:
+            # || x - w ||
+            self._activation_map[it.multi_index] = fast_norm(s[it.multi_index])
+            it.iternext()
 
-    # Treinamento usando batch seguindo sequencialmente os dados de input
-    def train_batch(self, data, num_iteration):
-        """Trains using all the vectors in data sequentially"""
-        self._init_T(len(data)*num_iteration)
-        iteration = 0
-        calculate_error = 10
-        while iteration < num_iteration:
-            if calculate_error == 10:
-                erro_quantizacao = self.quantization_error(data)
-                print('Iteracao: ' + iteration + ' erro quantizacao: ' + erro_quantizacao)
-                calculate_error = 0
-            idx = iteration % (len(data)-1)
-            self.update(data[idx], self.winner(data[idx]), iteration)
-            iteration += 1
-            calculate_error += 1
+    def activate(self, x):
+        """Return the activation map to x."""
+        self._activate(x)
+        return self._activation_map
 
     # Define função gaussiana
     def _gaussian(self, c, sigma):
@@ -115,6 +94,14 @@ class MiniSom(object):
         ax = exp(-power(self._neigx-c[0], 2)/d)
         ay = exp(-power(self._neigy-c[1], 2)/d)
         return outer(ax, ay)  # the external product gives a matrix
+
+    # Não é utilizado
+    def _mexican_hat(self, c, sigma):
+        """Mexican hat centered in c."""
+        xx, yy = meshgrid(self._neigx, self._neigy)
+        p = power(xx-c[0], 2) + power(yy-c[1], 2)
+        d = 2*pi*sigma*sigma
+        return exp(-p/d)*(1-2/d*p)
 
     def winner(self, x):
         """Compute the coordinates of the winning neuron for the sample x."""
@@ -162,13 +149,17 @@ class MiniSom(object):
             q[i] = self._weights[self.winner(x)]
         return q
 
-    # Não é utilizado
-    def _mexican_hat(self, c, sigma):
-        """Mexican hat centered in c."""
-        xx, yy = meshgrid(self._neigx, self._neigy)
-        p = power(xx-c[0], 2) + power(yy-c[1], 2)
-        d = 2*pi*sigma*sigma
-        return exp(-p/d)*(1-2/d*p)
+    # Inicia pesos aleatoriamente
+    def random_weights_init(self, data):
+        """Initialize the weights of the SOM picking random samples from data."""
+        it = nditer(self._activation_map, flags=['multi_index'])
+        while not it.finished:
+            rand_i = self._random_generator.randint(len(data))
+            self._weights[it.multi_index] = data[rand_i]
+            norm = fast_norm(self._weights[it.multi_index])
+            self._weights[it.multi_index] = self._weights[it.multi_index]/norm
+            it.iternext()
+        self.starting_weights = self.get_weights().copy()
 
     # Não utilizamos
     def train_random(self, data, num_iteration):
@@ -182,19 +173,23 @@ class MiniSom(object):
             # Atualiza o lattice através do calculo do vendecor para aquele input de dado
             self.update(data[rand_i], self.winner(data[rand_i]), iteration)
 
-    def _activate(self, x):
-        """Update matrix activation_map, in this matrix the element i,j is the response of the neuron i,j to x."""
-        s = subtract(x, self._weights)  # x - w
-        it = nditer(self._activation_map, flags=['multi_index'])
-        while not it.finished:
-            # || x - w ||
-            self._activation_map[it.multi_index] = fast_norm(s[it.multi_index])
-            it.iternext()
+    # Treinamento usando batch seguindo sequencialmente os dados de input
+    def train_batch(self, data, num_iteration):
+        """Trains using all the vectors in data sequentially"""
+        self._init_T(len(data)*num_iteration)
+        iteration = 0
+        while iteration < num_iteration:
+            # print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
+            idx = iteration % (len(data)-1)
+            self.update(data[idx], self.winner(data[idx]), iteration)
+            iteration += 1
 
-    def activate(self, x):
-        """Return the activation map to x."""
-        self._activate(x)
-        return self._activation_map
+    # Parametro T que será usado para ajustar o sigma e alfa
+    def _init_T(self, num_iteration):
+        """Initializes the parameter T needed to adjust the learning rate"""
+        # keeps the learning rate nearly constant
+        # for the last half of the iterations
+        self.T = num_iteration/2
 
     def distance_map(self):
         """Returns the distance map of the weights.
