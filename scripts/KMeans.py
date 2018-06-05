@@ -1,4 +1,3 @@
-
 class KMeans():
     """."""
 
@@ -31,7 +30,7 @@ class KMeans():
 
         return centroid_mais_proximo
 
-    def roda_kmeans(self, k_centroids, n_iteracoes = 1000, erro = 0.1, centroid_aleatorio = None):
+    def roda_kmeans(self, k_centroids, n_iteracoes_limite = 1000, erro = 0.001, centroid_aleatorio = None):
         """."""
         if centroid_aleatorio is None:
             self.inicia_centroides(k_centroids)
@@ -42,12 +41,20 @@ class KMeans():
         MediaDistAtual = positive_infinite
 
         nIteracoes = 0
-        while((nIteracoes < n_iteracoes) and abs(MediaDistAnterior - MediaDistAtual) > erro):
+        while((nIteracoes < n_iteracoes_limite) and abs(MediaDistAnterior - MediaDistAtual) > erro):
             # Só executa se a lista de centroids não tiver sido determinada na ultima iteração
             nIteracoes += 1
             print("quantidade de iterações igual à " + str(nIteracoes))
-
+            print(str(abs(MediaDistAnterior - MediaDistAtual)))
             if(self.lista_centroid_mais_proximos is None):
+                self.lista_centroid_mais_proximos = self.busca_centroides_mais_proximo()
+            #movimenta os centroids  a partir da lista adquirida na ultima iteração
+            self.centroids = self.movimenta_centroides(self.lista_centroid_mais_proximos)
+            MediaDistAnterior = MediaDistAtual
+            #atualiza lista de centroids mais proximos e calcula a média da distancia entre os pontos e
+            #os centroids mais proximos
+            MediaDistAtual = self.calculaMediaDistancias()
+            self.plotter.plots(self)
 
     def movimenta_centroides(self, closest):
         """."""

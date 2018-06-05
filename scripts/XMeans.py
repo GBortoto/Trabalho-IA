@@ -134,3 +134,4 @@ class Xmeans():
                     ]) - const_term
 
         return(BIC)
+

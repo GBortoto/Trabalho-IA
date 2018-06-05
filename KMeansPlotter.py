@@ -1,7 +1,3 @@
-#import pylab as pl
-#import numpy as np
-#from sklearn.decomposition import PCA
-
 class KMeansPlotter():
 
     def __init__(self ):
@@ -49,13 +45,13 @@ class KMeansPlotter():
         else:
             print('Salvando resultados...')
             plt.savefig('result_' + type + str(time()) + '.png')
+        plt.clf()
 
 
     def createPlotPoints(self, kmeans):
          ##algumas variaveis de plotagem
         areaPoints = 10
         areaCentroid = 150
-        
         
         ##lista com todos os pontos do gráfico
         
@@ -77,10 +73,8 @@ class KMeansPlotter():
                 pl.scatter(dados2d[point,0],dados2d[point,1], s = areaPoints, c= self.color[centroid%8],marker=self.markers[centroid%24])
             #centroids
             elif(centroid < 0):
-                pl.scatter(dados2d[point,0],dados2d[point,1] , s = areaCentroid , c =self.color[centroid%8] , marker = 'o')
+                pl.scatter(dados2d[point,0],dados2d[point,1] , s = areaCentroid , c ='k' , marker = 'o')
                 
     
         return pl
     
-
-

@@ -1,11 +1,3 @@
-# -*- coding: utf-8 -*-
-
-# Ativar qd rodar localmente
-# import ProcessTexts as preprocessor
-# import Matrix as mtx
-# import KMeans as kmeans
-# import KMeansDefault as kmeans_default
-
 import numpy as np
 # from . import dotmap, histogram, hitmap, mapview, umatrix
 import os
@@ -21,6 +13,8 @@ from sklearn.preprocessing import StandardScaler
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
+from sklearn.decomposition import PCA
+import pylab as pl
 
 if __name__ == "__main__":
 	env = 'kaggle'
@@ -36,7 +30,9 @@ if __name__ == "__main__":
 		# ---------------------
 		# K-means
 		print('----- Iniciando Processamento K-means -----')
-
+		kmeans = KMeans(dados)
+		kmeans.roda_kmeans(3)
+		
 		# ---------------------
 		# SOM
 		# print('----- Iniciando Processamento SOM -----')
