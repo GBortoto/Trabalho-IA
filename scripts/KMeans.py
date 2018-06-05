@@ -33,9 +33,14 @@ class KMeans():
     def roda_kmeans(self, k_centroids, n_iteracoes_limite = 1000, erro = 0.001, centroid_aleatorio = None):
         """."""
         if centroid_aleatorio is None:
-            self.inicia_centroides(k_centroids)
+            if self.type_of_kmeans == 'kmeans++':
+                self.inicia_centroides(1)
+                self.inicia_kmeanspp(k_centroids-1)
+            else:
+                self.inicia_centroides(k_centroids)
         else:
             self.centroids = centroid_aleatorio
+
 
         MediaDistAnterior = 0.0
         MediaDistAtual = positive_infinite
@@ -75,3 +80,44 @@ class KMeans():
             indexlista += 1
         #tira a média da distância entre os pontos e os centroids
         return sum(listaDistancias)
+
+    def inicia_kmeanspp(self, centroids_pedidos):
+        """."""
+        # Gera uma lista de probabilidade para cada ponto
+        lista_distancias_normalizadas = np.zeros(self.points.shape[0])
+        # print(self.points.shape)
+        # Rodamos um loop o numero de vezes que queremos de centroids
+        for novo_centroid in range(0, centroids_pedidos):
+            print("-- Escolhendo centroide " + str(novo_centroid+2))
+            # Redimensionamos o array com os centroids
+            centroids_redimensionado = self.centroids[:, np.newaxis, :]
+            print(centroids_redimensionado.shape)
+            # Elevamos a diferença de todos os pontos, a um centroi especifico, ao quadrado
+            diffCordenadasAoQuadrado = (self.points - centroids_redimensionado[novo_centroid]) ** 2
+            # Calculamos a soma da raiz para as diferenças em cada dimensão de um ponto
+            distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=1))
+            # print('distancias')
+            # print(distancias.shape)
+            # print(distancias)
+            # Calculamos a distancia total
+            distancia_total = np.sum(distancias, axis=0)
+            # Normalizamos as distancias
+            lista_distancias_normalizadas = np.zeros(self.points.shape[0])
+            lista_distancias_normalizadas = lista_distancias_normalizadas + (distancias / distancia_total)
+            # print('lista distancias')
+            # print(lista_distancias_normalizadas.shape)
+            # print(np.sum(lista_distancias_normalizadas, axis=0))
+            # Rodamos a probabilidade
+            # print('Escolha probabilistica!')
+            rand = random.choice(np.array(self.points.shape[0]), p=lista_distancias_normalizadas)
+            # print(rand)
+            # print(np.random.choice(lista_distancias_normalizadas, p=lista_distancias_normalizadas))
+            # Adicionamos um novo centroid com base no ponto que foi selecionado
+            ponto_escolhido = self.points[rand]
+            ponto_escolhido = ponto_escolhido[np.newaxis, :]
+            # print('Comparacao')
+            # print(self.centroids.shape)
+            # print(ponto_escolhido.shape)
+            self.centroids = np.append(self.centroids, ponto_escolhido, axis=0)
+            # print('Resultado')
+            # print(self.centroids.shape)
