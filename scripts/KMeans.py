@@ -1,11 +1,15 @@
+from numpy import dot
+import numpy.linalg import norm
+
 class KMeans():
     """."""
 
-    def __init__(self, points, type_of_kmeans='default'):
+    def __init__(self, points, type_of_kmeans='default', distance_type='euclidian'):
         """Generate a KMeans model for a specific 'k' and a n-matrix of point.
         It will return a model which represents the k-means cluster function
         """
         self.type_of_kmeans = type_of_kmeans
+        self.distance_type = distance_type
         self.points = points
         self.labels = []
 	## uma lista contendo os centroids mais proximos de cada ponto
@@ -21,12 +25,22 @@ class KMeans():
     def busca_centroides_mais_proximo(self):
         """."""
         centroids_redimensionado = self.centroids[:, np.newaxis , :]
-        #eleva-se a diferença ao quadrado
-        diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
-        #soma as diferenças e faz a raiz delas, obtendo as distancias euclidianas de todos os pontos para todos os centroids
-        distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
-        #identifica o centroid mais próximo de cada ponto
-        centroid_mais_proximo = np.argmin(distancias, axis=0)
+        if self.distance_type == 'euclidian':
+            #eleva-se a diferença ao quadrado
+            diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
+            #soma as diferenças e faz a raiz delas, obtendo as distancias euclidianas de todos os pontos para todos os centroids
+            distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
+            #identifica o centroid mais próximo de cada ponto
+            centroid_mais_proximo = np.argmin(distancias, axis=0)
+            print('Shape distancia euclidiana')
+            print(distancias.shape)
+
+
+        if distance_type == 'cosine_similarity':
+            cos_sim = dot(self.points, centroids_redimensionado)/(norm(self.points)*norm(centroids_redimensionado))
+            centroid_mais_proximo = np.argmin(1-cos_sim, axis=0)
+            print('Shape distancia cosseno')
+            print(cos_sim.shape)
 
         return centroid_mais_proximo
 
