@@ -106,7 +106,7 @@ class MiniSom(object):
         while iteration < num_iteration:
             if calculate_error == 10:
                 erro_quantizacao = self.quantization_error(data)
-                print('Iteracao: ' + iteration + ' erro quantizacao: ' + erro_quantizacao)
+                print('Iteracao: ' + str(iteration) + ' erro quantizacao: ' + str(erro_quantizacao))
                 calculate_error = 0
             idx = iteration % (len(data)-1)
             self.update(data[idx], self.winner(data[idx]), iteration)

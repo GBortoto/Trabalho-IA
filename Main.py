@@ -31,7 +31,7 @@ if __name__ == "__main__":
 		# K-means
 		# print('----- Iniciando Processamento K-means -----')
 		# kmeans = KMeans(dados)
-		# kmeans.roda_kmeans(3/)
+		# kmeans.roda_kmeans(3)
 
 		# kmeans = KMeans(dados, type_of_kmeans='kmeans++')
 		# kmeans.roda_kmeans(3)
@@ -47,6 +47,17 @@ if __name__ == "__main__":
 		som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1)
 		som.random_weights_init(dados)
 		som.train_batch(dados, 100)
+
+		plt.figure(figsize=(14, 14))
+		for i, vec in enumerate(W):
+			winnin_position = som.winner(vec)
+			plt.text(winnin_position[0], winnin_position[1]+np.random.rand()*.9)
+		plt.xticks(range(map_dim))
+		plt.yticks(range(map_dim))
+		plt.grid()
+		plt.xlim([0, map_dim])
+		plt.ylim([0, map_dim])
+		plt.plot()
 		# ---------------------
 		# Plots
 		# v = View2DPacked(25, 25, 'SOM Plots',text_size=8)
