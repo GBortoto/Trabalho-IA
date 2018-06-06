@@ -261,20 +261,19 @@ class TransformMatrix():
 # -*- coding: utf-8 -*-
 # Fonte: https://github.com/JustGlowing/minisom
 
-"""Implementação minimalista do self-organizing maps.
+# https://github.com/JustGlowing/minisom/blob/master/minisom.py
+# https://github.com/JustGlowing/minisom/blob/master/examples/PoemsAnalysis.ipynb
+# https://github.com/JustGlowing/minisom/blob/master/examples/examples.ipynb
+# https://glowingpython.blogspot.com/2013/09/self-organizing-maps.html
 
-"""
+u"""Implementação minimalista do self-organizing maps."""
 
 from math import sqrt
 from numpy import (array, unravel_index, nditer, linalg, random, subtract, power, exp, pi, zeros, arange, outer, meshgrid, dot)
 from collections import defaultdict
 from warnings import warn
 
-"""
-    Minimalistic implementation of the Self Organizing Maps (SOM).
-"""
-
-
+# Gera um norm de uma matrix -> Norm é o produto vetorial da uma matrix X por sua transporta, tirando a raiz do resultado
 def fast_norm(x):
     """Return norm-2 of a 1-D numpy array.
 
@@ -287,90 +286,94 @@ def fast_norm(x):
 class MiniSom(object):
     """."""
 
-    def __init__(self, x, y, input_len, sigma=1.0, learning_rate=0.5,
-                 decay_function=None, neighborhood_function='gaussian',
-                 random_seed=None):
-        """Initialize a Self Organizing Maps.
+    def __init__(self, x, y, input_len, sigma=1.0, learning_rate=0.5, decay_function=None, neighborhood_function='gaussian', random_seed=None):
+        """Inicializa o SOM.
 
-        Parameters
-        ----------
-        decision_tree : decision tree
-        The decision tree to be exported.
-        x : int
-            x dimension of the SOM
-        y : int
-            y dimension of the SOM
-        input_len : int
-            Number of the elements of the vectors in input.
-        sigma : float, optional (default=1.0)
-            Spread of the neighborhood function, needs to be adequate
-            to the dimensions of the map.
-            (at the iteration t we have sigma(t) = sigma / (1 + t/T)
-            where T is #num_iteration/2)
-            learning_rate, initial learning rate
-            (at the iteration t we have
-            learning_rate(t) = learning_rate / (1 + t/T)
-            where T is #num_iteration/2)
-        decay_function : function (default=None)
-            Function that reduces learning_rate and sigma at each iteration
-            default function:
-            lambda x, current_iteration, max_iter :
-                        x/(1+current_iteration/max_iter)
-        neighborhood_function : function, optional (default='gaussian')
-            Function that weights the neighborhood of a position in the map
-            possible values: 'gaussian', 'mexican_hat'
-        random_seed : int, optiona (default=None)
-            Random seed to use.
-
+        x: dimensao do lattice do SOM
+        y: dimensao do lattice do SOM
+        input_len : numero de dimensões do vetor de input
+        sigma : taxa de espalhamento da função de vizinhança. Ajusta conforme iteração baseado na formula: (at the iteration t we have sigma(t) = sigma / (1 + t/T) onde T é #num_iteration/2)
+        learning_rate: taxa de aprendizado. Ajusta conforme iteração baseado na formula (at the iteration t we have learning_rate(t) = learning_rate / (1 + t/T) onde T é #num_iteration/2)
+        decay_function : função de decaimento para sigma e alfa. Por padrão: lambda x, current_iteration, max_iter : x/(1+current_iteration/max_iter)
+        neighborhood_function : função de vizinhança para calcular efeito do BMU. Padrão é gaussiana
+        random_seed : see aleatória
         """
+
         if sigma >= x/2.0 or sigma >= y/2.0:
             warn('Warning: sigma is too high for the dimension of the map.')
         if random_seed:
             self._random_generator = random.RandomState(random_seed)
         else:
             self._random_generator = random.RandomState(random_seed)
+
+        # Define função de decaimento default
         if decay_function:
             self._decay_function = decay_function
         else:
             self._decay_function = lambda x, t, max_iter: x/(1+t/max_iter)
+
         self._learning_rate = learning_rate
         self._sigma = sigma
-        # random initialization
+        # Inicializa pesos aleatóriamente
         self._weights = self._random_generator.rand(x, y, input_len)*2-1
         for i in range(x):
             for j in range(y):
-                # normalization
+                # Normaliza os pesos
                 norm = fast_norm(self._weights[i, j])
                 self._weights[i, j] = self._weights[i, j] / norm
+
+        # Cria mapa de ativação do tamanho do lattice
         self._activation_map = zeros((x, y))
         self._neigx = arange(x)
         self._neigy = arange(y)  # used to evaluate the neighborhood function
-        neig_functions = {'gaussian': self._gaussian,
-                          'mexican_hat': self._mexican_hat}
+
+        # Define função de vizinhança
+        neig_functions = {'gaussian': self._gaussian, 'mexican_hat': self._mexican_hat}
         if neighborhood_function not in neig_functions:
             msg = '%s not supported. Functions available: %s'
-            raise ValueError(msg % (neighborhood_function,
-                                    ', '.join(neig_functions.keys())))
+            raise ValueError(msg % (neighborhood_function, ', '.join(neig_functions.keys())))
         self.neighborhood = neig_functions[neighborhood_function]
+
+    # Inicia pesos aleatoriamente
+    def random_weights_init(self, data):
+        """Initialize the weights of the SOM picking random samples from data."""
+        it = nditer(self._activation_map, flags=['multi_index'])
+        while not it.finished:
+            rand_i = self._random_generator.randint(len(data))
+            self._weights[it.multi_index] = data[rand_i]
+            norm = fast_norm(self._weights[it.multi_index])
+            self._weights[it.multi_index] = self._weights[it.multi_index]/norm
+            it.iternext()
+        self.starting_weights = self.get_weights().copy()
 
     def get_weights(self):
         """Return the weights of the neural network."""
         return self._weights
 
-    def _activate(self, x):
-        """Update matrix activation_map, in this matrix the element i,j is the response of the neuron i,j to x."""
-        s = subtract(x, self._weights)  # x - w
-        it = nditer(self._activation_map, flags=['multi_index'])
-        while not it.finished:
-            # || x - w ||
-            self._activation_map[it.multi_index] = fast_norm(s[it.multi_index])
-            it.iternext()
+    # Parametro T que será usado para ajustar o sigma e alfa
+    def _init_T(self, num_iteration):
+        """Initializes the parameter T needed to adjust the learning rate"""
+        # keeps the learning rate nearly constant
+        # for the last half of the iterations
+        self.T = num_iteration/2
 
-    def activate(self, x):
-        """Return the activation map to x."""
-        self._activate(x)
-        return self._activation_map
+    # Treinamento usando batch seguindo sequencialmente os dados de input
+    def train_batch(self, data, num_iteration):
+        """Trains using all the vectors in data sequentially"""
+        self._init_T(len(data)*num_iteration)
+        iteration = 0
+        calculate_error = 10
+        while iteration < num_iteration:
+            if calculate_error == 10:
+                erro_quantizacao = self.quantization_error(data)
+                print('Iteracao: ' + iteration + ' erro quantizacao: ' + erro_quantizacao)
+                calculate_error = 0
+            idx = iteration % (len(data)-1)
+            self.update(data[idx], self.winner(data[idx]), iteration)
+            iteration += 1
+            calculate_error += 1
 
+    # Define função gaussiana
     def _gaussian(self, c, sigma):
         """Return a Gaussian centered in c."""
         d = 2*pi*sigma*sigma
@@ -378,18 +381,10 @@ class MiniSom(object):
         ay = exp(-power(self._neigy-c[1], 2)/d)
         return outer(ax, ay)  # the external product gives a matrix
 
-    def _mexican_hat(self, c, sigma):
-        """Mexican hat centered in c."""
-        xx, yy = meshgrid(self._neigx, self._neigy)
-        p = power(xx-c[0], 2) + power(yy-c[1], 2)
-        d = 2*pi*sigma*sigma
-        return exp(-p/d)*(1-2/d*p)
-
     def winner(self, x):
         """Compute the coordinates of the winning neuron for the sample x."""
         self._activate(x)
-        return unravel_index(self._activation_map.argmin(),
-                             self._activation_map.shape)
+        return unravel_index(self._activation_map.argmin(), self._activation_map.shape)
 
     def update(self, x, win, t):
         """Update the weights of the neurons.
@@ -404,12 +399,17 @@ class MiniSom(object):
             Iteration index
 
         """
+        # Ajusta decaimento do alfa e do sigma
         eta = self._decay_function(self._learning_rate, t, self.T)
         # sigma and learning rate decrease with the same rule
         sig = self._decay_function(self._sigma, t, self.T)
         # improves the performances
+
+        # Calcula nova vizinhança baseada na função de decaimento do neuronio vencedor e o novo sigma * a função de aprendizagem
         g = self.neighborhood(win, sig)*eta
         it = nditer(g, flags=['multi_index'])
+
+        # Aplica a moviamentação para todos os pesos que foram afetados pela rede de vizinhança
         while not it.finished:
             # eta * neighborhood_function * (x-w)
             x_w = (x - self._weights[it.multi_index])
@@ -419,6 +419,7 @@ class MiniSom(object):
             self._weights[it.multi_index] = self._weights[it.multi_index]/norm
             it.iternext()
 
+    # Calcula a quantização para cada neuronio vencedor
     def quantization(self, data):
         """Assign a code book (weights vector of the winning neuron) to each sample in data."""
         q = zeros(data.shape)
@@ -426,41 +427,39 @@ class MiniSom(object):
             q[i] = self._weights[self.winner(x)]
         return q
 
-    def random_weights_init(self, data):
-        """Initialize the weights of the SOM picking random samples from data."""
-        it = nditer(self._activation_map, flags=['multi_index'])
-        while not it.finished:
-            rand_i = self._random_generator.randint(len(data))
-            self._weights[it.multi_index] = data[rand_i]
-            norm = fast_norm(self._weights[it.multi_index])
-            self._weights[it.multi_index] = self._weights[it.multi_index]/norm
-            it.iternext()
-        self.starting_weights = self.get_weights().copy()
+    # Não é utilizado
+    def _mexican_hat(self, c, sigma):
+        """Mexican hat centered in c."""
+        xx, yy = meshgrid(self._neigx, self._neigy)
+        p = power(xx-c[0], 2) + power(yy-c[1], 2)
+        d = 2*pi*sigma*sigma
+        return exp(-p/d)*(1-2/d*p)
 
+    # Não utilizamos
     def train_random(self, data, num_iteration):
         """Trains the SOM picking samples at random from data"""
         self._init_T(num_iteration)
         for iteration in range(num_iteration):
             # print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
             # pick a random sample
+            # Pega um input aleatorio
             rand_i = self._random_generator.randint(len(data))
+            # Atualiza o lattice através do calculo do vendecor para aquele input de dado
             self.update(data[rand_i], self.winner(data[rand_i]), iteration)
 
-    def train_batch(self, data, num_iteration):
-        """Trains using all the vectors in data sequentially"""
-        self._init_T(len(data)*num_iteration)
-        iteration = 0
-        while iteration < num_iteration:
-            # print("[Treinando SOM: " + str(iteration/num_iteration) + "% COMPLETO]")
-            idx = iteration % (len(data)-1)
-            self.update(data[idx], self.winner(data[idx]), iteration)
-            iteration += 1
+    def _activate(self, x):
+        """Update matrix activation_map, in this matrix the element i,j is the response of the neuron i,j to x."""
+        s = subtract(x, self._weights)  # x - w
+        it = nditer(self._activation_map, flags=['multi_index'])
+        while not it.finished:
+            # || x - w ||
+            self._activation_map[it.multi_index] = fast_norm(s[it.multi_index])
+            it.iternext()
 
-    def _init_T(self, num_iteration):
-        """Initializes the parameter T needed to adjust the learning rate"""
-        # keeps the learning rate nearly constant
-        # for the last half of the iterations
-        self.T = num_iteration/2
+    def activate(self, x):
+        """Return the activation map to x."""
+        self._activate(x)
+        return self._activation_map
 
     def distance_map(self):
         """Returns the distance map of the weights.
@@ -490,9 +489,9 @@ class MiniSom(object):
             a[self.winner(x)] += 1
         return a
 
+    # Erro de quantização: calcula média da distancia entre cada input e seu respectivo BMU
     def quantization_error(self, data):
-        """Returns the quantization error computed as the average
-        distance between each input sample and its best matching unit."""
+        """Returns the quantization error computed as the average distance between each input sample and its best matching unit."""
         error = 0
         for x in data:
             error += fast_norm(x-self._weights[self.winner(x)])

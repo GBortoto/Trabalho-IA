@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 # Fonte: https://github.com/JustGlowing/minisom
 
+# https://github.com/JustGlowing/minisom/blob/master/minisom.py
+# https://github.com/JustGlowing/minisom/blob/master/examples/PoemsAnalysis.ipynb
+# https://github.com/JustGlowing/minisom/blob/master/examples/examples.ipynb
+# https://glowingpython.blogspot.com/2013/09/self-organizing-maps.html
+
 u"""Implementação minimalista do self-organizing maps."""
 
 from math import sqrt
