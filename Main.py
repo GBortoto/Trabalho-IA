@@ -21,7 +21,7 @@ if __name__ == "__main__":
 	# env = 'local'
 
 	if env == 'kaggle':
-		preprocessor = ProcessTexts(texts=['bbc_kaggle'])
+		preprocessor = ProcessTexts(texts=['eua_kaggle'])
 		print('----- Transformando Tokens em Matriz -----')
 		matrix = TransformMatrix(preprocessor.tokens)
 		print('----- Resultados do bag of words -----')

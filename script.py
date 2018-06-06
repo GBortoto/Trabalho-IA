@@ -608,6 +608,12 @@ class ProcessTexts():
                         t = f.read()
                         self._texts.append(t)
                         f.close()
+        if 'eua_kaggle' in texts:
+            for file in sorted(os.listdir('../input/')):
+                f = open('../input/' + file, encoding='latin-1')
+                t = f.read()
+                self._texts.append(t)
+                f.close()
 
     def _process_text(self, type='Porter'):
         print("----- Tokenizando Sentencas e Palavras -----")
@@ -948,7 +954,7 @@ if __name__ == "__main__":
 	# env = 'local'
 
 	if env == 'kaggle':
-		preprocessor = ProcessTexts(texts=['bbc_kaggle'])
+		preprocessor = ProcessTexts(texts=['eua_kaggle'])
 		print('----- Transformando Tokens em Matriz -----')
 		matrix = TransformMatrix(preprocessor.tokens)
 		print('----- Resultados do bag of words -----')
@@ -976,9 +982,9 @@ if __name__ == "__main__":
 		som.train_batch(dados, 100)
 
 		plt.figure(figsize=(14, 14))
-		for i, (vec) in enumerate(zip(W)):
+		for i, vec in enumerate(W):
 			winnin_position = som.winner(vec)
-			plt.text(winnin_position[0], winnin_position[1]+np.random.rand()*.9, t)
+			plt.text(winnin_position[0], winnin_position[1]+np.random.rand()*.9)
 		plt.xticks(range(map_dim))
 		plt.yticks(range(map_dim))
 		plt.grid()

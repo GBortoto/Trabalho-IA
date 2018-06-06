@@ -35,6 +35,12 @@ class ProcessTexts():
                         t = f.read()
                         self._texts.append(t)
                         f.close()
+        if 'eua_kaggle' in texts:
+            for file in sorted(os.listdir('../input/')):
+                f = open('../input/' + file, encoding='latin-1')
+                t = f.read()
+                self._texts.append(t)
+                f.close()
 
     def _process_text(self, type='Porter'):
         print("----- Tokenizando Sentencas e Palavras -----")
