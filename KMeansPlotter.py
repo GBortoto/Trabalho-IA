@@ -1,3 +1,7 @@
+# https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
+# https://jakevdp.github.io/PythonDataScienceHandbook/05.09-principal-component-analysis.html
+# http://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html
+
 class KMeansPlotter():
 
     def __init__(self ):
@@ -52,9 +56,9 @@ class KMeansPlotter():
          ##algumas variaveis de plotagem
         areaPoints = 10
         areaCentroid = 150
-        
+
         ##lista com todos os pontos do gráfico
-        
+
         all_points = kmeans.points.tolist()
         all_points.extend(kmeans.centroids.tolist())
 
@@ -65,8 +69,11 @@ class KMeansPlotter():
         clusters.extend(centroid_labels)
 
         pca = PCA(n_components=2).fit(all_points)
+        # components_
+        # explained_variance_
+        # explained_variance_ratio_
         dados2d = pca.transform(all_points)
-        
+
         for point in range(0 ,dados2d.shape[0]):
             centroid = clusters[point]
             if(centroid >= 0):
@@ -74,7 +81,6 @@ class KMeansPlotter():
             #centroids
             elif(centroid < 0):
                 pl.scatter(dados2d[point,0],dados2d[point,1] , s = areaCentroid , c ='k' , marker = 'o')
-                
-    
+
+
         return pl
-    
