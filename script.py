@@ -205,6 +205,280 @@ class Silhouette():
             [groupSilhouette(groups[i], groups, typeOfDistance)
              for i in range(len(groups))]
             )/len(groups)
+
+class Xmeans():
+
+    def __init__(self, points):
+        """."""
+        self.points = points
+        self.labels = []
+
+    def roda_xmeans(self, n_iteracoes = 100, trim_percentage = 0.9):
+        """."""
+        num_centroids = 2
+
+        # Instância para controle do K-Means global
+        global_kmeans = KMeans(self.points)
+        global_kmeans.roda_kmeans(num_centroids, n_iteracoes)
+
+        # Instância utilizada para K-Means locais
+        local_kmeans = KMeans(self.points)
+        for iter in range(n_iteracoes):
+
+            # Pais que não vale a pena dividir em filhos
+            ultimate_fathers = []
+
+            # Pais cujos filhos são melhores que ele
+            fathers_to_pop = []
+
+            for i in range(num_centroids):
+
+                # Como não vale a pena dividir, vai pro próximo pai
+                if i in ultimate_fathers:
+                    continue
+                    
+                points_centroid_father = get_centroid_points(i, global_kmeans.points, global_kmeans.labels)
+                father_labels = [i for j in range(len(points_centroid_father))]
+                father_centroid = global_kmeans.centroids[i]
+
+                # BIC dos centróide pai
+                bic_father = self.compute_bic(points_centroid_father, father_centroid, father_labels, 1)
+
+                # O número representa quanto do range dos pontos será utilizado
+                new_centroids = self.get_two_new_centroids(trim_percentage, father_centroid, global_kmeans.points)
+
+                # Executa K-Means local para dois filhos
+                local_kmeans.lista_centroid_mais_proximos = None
+                local_kmeans.points = points_centroid_father
+                local_kmeans.roda_kmeans(2, new_centroids)
+
+                # BIC dos centróides filhos
+                bic_children = self.compute_bic(local_kmeans.points, local_kmeans.centroids, local_kmeans.labels, 2)
+
+                # Se bic_children melhor que bic_pai, guarda índice do pai para ser removido
+                # e coloca as crianças na lista de centroids.
+                # Caso contrário guarda índice do pai no array de pais que não serão mais avaliados
+                if bic_children > bic_pai:
+                    fathers_to_pop.append(i)
+                    global_kmeans.centroids.extend(local_kmeans.centroids)
+                else:
+                    ultimate_fathers.append(i)
+
+            # Se nenhum pai virou dois filhos, os centróides são as melhores representações dos dados
+            if not fathers_to_pop:
+                return
+            
+            # Remove os pais, com índices guardados no father_to_pop, e atualiza número de centróides
+            for i in range(len(fathers_to_pop)):
+                global_kmeans.centroids.pop(fathers_to_pop[i])
+            num_centroids = len(global_kmeans.centroids)
+
+
+    # Divisão de centróides em 2
+
+    def get_centroid_points(self, i, param_points = None, param_labels = None):
+        if param_points is None:
+            param_points = self.points
+        if param_labels is None:
+            param_labels = self.labels
+
+        points_per_centroid = []
+
+        for k in range(len(param_labels)):
+            if (param_labels[k] == i):
+                points_per_centroid.append(param_points[k])
+
+        return points_per_centroid
+
+    def get_two_new_centroids(self, trim_percentage, father_centroid, param_points = None):
+        if param_points is None:
+            param_points = self.points
+
+        one_centroid = []
+        two_centroid = []
+
+        for i in range(len(param_points)):
+            range_dimension = max(param_points[i]) - min(param_points[i])
+            range_dimension = range_dimension * trim_percentage
+            range_divided = range_dimension / 2
+
+            one_centroid.append(father_centroid[i] - range_divided)
+            two_centroid.append(father_centroid[i] + range_divided)
+
+        return [one_centroid, two_centroid]
+
+    # Método para avaliação dos modelos de centróides
+
+    def compute_bic(X, centers, labels, K):
+        """Computes the BIC metric for a given clusters
+
+        Parameters:
+        -----------------------------------------
+        kmeans:  List of clustering object from scikit learn
+
+        X     :  multidimension np array of data points
+
+        Returns:
+        -----------------------------------------
+        BIC value"""
+
+        # número de pontos contidos em cada centróide
+        n = np.bincount(labels)
+
+        # size of data set
+        R, d = X.shape
+
+        # compute variance for all clusters beforehand
+        cl_var = (1.0 / (R - K) / d) * sum([sum(distance.cdist(X[np.where(labels == i)], [centers[0][i]], 'euclidean')**2) for i in range(K)])
+
+        const_term = 0.5 * K * np.log(R) * (d + 1)
+
+        BIC = np.sum([
+                    n[i] * np.log(n[i]) -
+                    n[i] * np.log(R) -
+                    ((n[i] * d) / 2) * np.log(2 * np.pi * cl_var) -
+                    ((n[i] - 1) * d / 2) for i in range(K)
+                    ]) - const_term
+
+        return(BIC)
+
+from numpy import dot
+from numpy.linalg import norm
+
+class KMeans():
+    """."""
+
+    def __init__(self, points, type_of_kmeans='default', distance_type='euclidian'):
+        """Generate a KMeans model for a specific 'k' and a n-matrix of point.
+        It will return a model which represents the k-means cluster function
+        """
+        self.type_of_kmeans = type_of_kmeans
+        self.distance_type = distance_type
+        self.points = points
+        self.labels = []
+	## uma lista contendo os centroids mais proximos de cada ponto
+        self.lista_centroid_mais_proximos = None
+        self.plotter = KMeansPlotter()
+
+    def inicia_centroides(self, k_centroids):
+        """."""
+        centroids = self.points.copy()
+        np.random.shuffle(centroids)
+        self.centroids = centroids[:k_centroids]
+
+    def busca_centroides_mais_proximo(self):
+        """."""
+        centroids_redimensionado = self.centroids[:, np.newaxis , :]
+        if self.distance_type == 'euclidian':
+            #eleva-se a diferença ao quadrado
+            diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
+            #soma as diferenças e faz a raiz delas, obtendo as distancias euclidianas de todos os pontos para todos os centroids
+            distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
+            #identifica o centroid mais próximo de cada ponto
+            centroid_mais_proximo = np.argmin(distancias, axis=0)
+            print('Shape distancia euclidiana')
+            print(distancias.shape)
+
+
+        if self.distance_type == 'cosine_similarity':
+            cos_sim = dot(self.points, centroids_redimensionado)/(norm(self.points)*norm(centroids_redimensionado))
+            centroid_mais_proximo = np.argmin(1-cos_sim, axis=0)
+            print('Shape distancia cosseno')
+            print(cos_sim.shape)
+
+        return centroid_mais_proximo
+
+    def roda_kmeans(self, k_centroids, n_iteracoes_limite = 1000, erro = 0.001, centroid_aleatorio = None):
+        """."""
+        if centroid_aleatorio is None:
+            if self.type_of_kmeans == 'kmeans++':
+                self.inicia_centroides(1)
+                self.inicia_kmeanspp(k_centroids-1)
+            else:
+                self.inicia_centroides(k_centroids)
+        else:
+            self.centroids = centroid_aleatorio
+
+
+        MediaDistAnterior = 0.0
+        MediaDistAtual = positive_infinite
+
+        nIteracoes = 0
+        while((nIteracoes < n_iteracoes_limite) and abs(MediaDistAnterior - MediaDistAtual) > erro):
+            # Só executa se a lista de centroids não tiver sido determinada na ultima iteração
+            nIteracoes += 1
+            print("quantidade de iterações igual à " + str(nIteracoes))
+            print(str(abs(MediaDistAnterior - MediaDistAtual)))
+            if(self.lista_centroid_mais_proximos is None):
+                self.lista_centroid_mais_proximos = self.busca_centroides_mais_proximo()
+            #movimenta os centroids  a partir da lista adquirida na ultima iteração
+            self.centroids = self.movimenta_centroides(self.lista_centroid_mais_proximos)
+            MediaDistAnterior = MediaDistAtual
+            #atualiza lista de centroids mais proximos e calcula a média da distancia entre os pontos e
+            #os centroids mais proximos
+            MediaDistAtual = self.calculaMediaDistancias()
+            self.plotter.plots(self)
+
+    def movimenta_centroides(self, closest):
+        """."""
+        return np.array([self.points[closest == k].mean(axis=0) for k in range(self.centroids.shape[0])])
+
+    def calculaMediaDistancias(self ):
+
+        centroids_redimensionado = self.centroids[:, np.newaxis , :]
+        diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
+        distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
+        self.lista_centroid_mais_proximos = np.argmin(distancias, axis=0)
+
+        listaDistancias = [0.0]*len(self.centroids)
+        indexlista = 0
+        #soma todas as distâncias entre os pontos e os centroids mais próximos
+        for centroid in self.lista_centroid_mais_proximos:
+            listaDistancias[centroid] += distancias[centroid][indexlista]
+            indexlista += 1
+        #tira a média da distância entre os pontos e os centroids
+        return sum(listaDistancias)
+
+    def inicia_kmeanspp(self, centroids_pedidos):
+        """."""
+        # Gera uma lista de probabilidade para cada ponto
+        lista_distancias_normalizadas = np.zeros(self.points.shape[0])
+        # print(self.points.shape)
+        # Rodamos um loop o numero de vezes que queremos de centroids
+        for novo_centroid in range(0, centroids_pedidos):
+            print("-- Escolhendo centroide " + str(novo_centroid+2))
+            # Redimensionamos o array com os centroids
+            centroids_redimensionado = self.centroids[:, np.newaxis, :]
+            print(centroids_redimensionado.shape)
+            # Elevamos a diferença de todos os pontos, a um centroi especifico, ao quadrado
+            diffCordenadasAoQuadrado = (self.points - centroids_redimensionado[novo_centroid]) ** 2
+            # Calculamos a soma da raiz para as diferenças em cada dimensão de um ponto
+            distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=1))
+            # print('distancias')
+            # print(distancias.shape)
+            # print(distancias)
+            # Calculamos a distancia total
+            distancia_total = np.sum(distancias, axis=0)
+            # Normalizamos as distancias
+            lista_distancias_normalizadas = np.zeros(self.points.shape[0])
+            lista_distancias_normalizadas = lista_distancias_normalizadas + (distancias / distancia_total)
+            # print('lista distancias')
+            # print(lista_distancias_normalizadas.shape)
+            # print(np.sum(lista_distancias_normalizadas, axis=0))
+            # Rodamos a probabilidade
+            # print('Escolha probabilistica!')
+            rand = random.choice(np.array(self.points.shape[0]), p=lista_distancias_normalizadas)
+            # print(rand)
+            # print(np.random.choice(lista_distancias_normalizadas, p=lista_distancias_normalizadas))
+            # Adicionamos um novo centroid com base no ponto que foi selecionado
+            ponto_escolhido = self.points[rand]
+            ponto_escolhido = ponto_escolhido[np.newaxis, :]
+            # print('Comparacao')
+            # print(self.centroids.shape)
+            # print(ponto_escolhido.shape)
+            self.centroids = np.append(self.centroids, ponto_escolhido, axis=0)
+            # print('Resultado')
+            # print(self.centroids.shape)
 """."""
 # -*- coding: utf-8 -*-
 
@@ -258,6 +532,92 @@ class TransformMatrix():
 			print('----- Processando Matriz TF-IDF -----')
 			tfidf_vectorize = TfidfTransformer(smooth_idf=False)
 			return tfidf_vectorize.fit_transform(self.bag_of_words).toarray()
+"""Class to process all texts."""
+
+# import os
+# import string
+#
+# from nltk.tokenize import word_tokenize, sent_tokenize
+# from nltk.corpus import stopwords
+# from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
+
+
+class ProcessTexts():
+    """."""
+
+    def __init__(self, texts):
+        """."""
+        self._read_text(texts)
+        self._process_text()
+
+    def _read_text(self, texts):
+        self._texts = []  # list of text samples
+
+        if 'bbc_local' in texts:
+            print(os.listdir('database'))
+            for file in sorted(os.listdir('database/bbc_news/')):
+                path = 'database/bbc_news/' + file
+                f = open(path, encoding='latin-1')
+                t = f.read()
+                self._texts.append(t)
+                f.close()
+        if 'bbc_kaggle' in texts:
+            for directory_type in sorted(os.listdir('../input/bbc news summary/BBC News Summary/')):
+                for directory in sorted(os.listdir('../input/bbc news summary/BBC News Summary/' + directory_type)):
+                    for file in sorted(os.listdir('../input/bbc news summary/BBC News Summary/' + directory_type + "/" + directory)):
+                        f = open('../input/bbc news summary/BBC News Summary/' + directory_type + "/" + directory + "/" + file, encoding='latin-1')
+                        t = f.read()
+                        self._texts.append(t)
+                        f.close()
+        if 'eua_kaggle' in texts:
+            for file in sorted(os.listdir('../input/')):
+                f = open('../input/' + file, encoding='latin-1')
+                t = f.read()
+                self._texts.append(t)
+                f.close()
+
+    def _process_text(self, type='Porter'):
+        print("----- Tokenizando Sentencas e Palavras -----")
+        table = str.maketrans('', '', string.punctuation)
+        table2 = str.maketrans('', '', string.digits)
+        stop_words = set(stopwords.words('english'))
+        self.tokens = []
+
+        # Para cada texto
+        for index, text in enumerate(self._texts):
+            # Tokenize por sentenca
+            sentences = sent_tokenize(text)
+            tokens_of_sentence = []
+            # Para cada sentenca
+            for sentence in sentences:
+                # Tokenize por palavras, elimine stop words, pontuação e de lower
+                stripped = [word.translate(table).translate(table2).lower() for word in word_tokenize(sentence) if not word in stop_words]
+                stemmerized = self._normalize_text(tokens=stripped, type=type)
+                tokens_of_sentence = tokens_of_sentence + stemmerized
+            self.tokens.append(tokens_of_sentence)
+        del self._texts
+        self._join_words()
+
+    def _normalize_text(self, tokens, type):
+        if type is 'Porter':
+            porter = PorterStemmer()
+            return [porter.stem(t) for t in tokens]
+        if type is 'Lancaster':
+            lancaster = LancasterStemmer()
+            return [lancaster.stem(t) for t in tokens]
+        if type is 'Snowball':
+            snowball = SnowballStemmer('english')
+            return [snowball.stem(t) for t in tokens]
+        if type is 'Lemma':
+            lemma = WordNetLemmatizer()
+            return [lemma.lemmatize(t) for t in tokens]
+
+    def _join_words(self):
+        new_tokens = []
+        for token in self.tokens:
+            # new_tokens.append((' '.join(token)).replace('  ', ' '))
+            new_tokens.append(' '.join(token))
+        self.tokens = new_tokens
 # -*- coding: utf-8 -*-
 # Fonte: https://github.com/JustGlowing/minisom
 
@@ -571,365 +931,6 @@ class MiniSom(object):
         # Find frauds
         mappings = self.win_map(X)
         mappings
-"""Class to process all texts."""
-
-# import os
-# import string
-#
-# from nltk.tokenize import word_tokenize, sent_tokenize
-# from nltk.corpus import stopwords
-# from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
-
-
-class ProcessTexts():
-    """."""
-
-    def __init__(self, texts):
-        """."""
-        self._read_text(texts)
-        self._process_text()
-
-    def _read_text(self, texts):
-        self._texts = []  # list of text samples
-
-        if 'bbc_local' in texts:
-            for directory in sorted(os.listdir('./database/bbc_news')):
-                for file in sorted(os.listdir('./database/bbc_news/' + directory)):
-                    path = './database/bbc_news/' + directory + "/" + file
-                    f = open(path, encoding='latin-1')
-                    t = f.read()
-                    self._texts.append(t)
-                    f.close()
-        if 'bbc_kaggle' in texts:
-            for directory_type in sorted(os.listdir('../input/bbc news summary/BBC News Summary/')):
-                for directory in sorted(os.listdir('../input/bbc news summary/BBC News Summary/' + directory_type)):
-                    for file in sorted(os.listdir('../input/bbc news summary/BBC News Summary/' + directory_type + "/" + directory)):
-                        f = open('../input/bbc news summary/BBC News Summary/' + directory_type + "/" + directory + "/" + file, encoding='latin-1')
-                        t = f.read()
-                        self._texts.append(t)
-                        f.close()
-        if 'eua_kaggle' in texts:
-            for file in sorted(os.listdir('../input/')):
-                f = open('../input/' + file, encoding='latin-1')
-                t = f.read()
-                self._texts.append(t)
-                f.close()
-
-    def _process_text(self, type='Porter'):
-        print("----- Tokenizando Sentencas e Palavras -----")
-        table = str.maketrans('', '', string.punctuation)
-        table2 = str.maketrans('', '', string.digits)
-        stop_words = set(stopwords.words('english'))
-        self.tokens = []
-
-        # Para cada texto
-        for index, text in enumerate(self._texts):
-            # Tokenize por sentenca
-            sentences = sent_tokenize(text)
-            tokens_of_sentence = []
-            # Para cada sentenca
-            for sentence in sentences:
-                # Tokenize por palavras, elimine stop words, pontuação e de lower
-                stripped = [word.translate(table).translate(table2).lower() for word in word_tokenize(sentence) if not word in stop_words]
-                stemmerized = self._normalize_text(tokens=stripped, type=type)
-                tokens_of_sentence = tokens_of_sentence + stemmerized
-            self.tokens.append(tokens_of_sentence)
-        del self._texts
-        self._join_words()
-
-    def _normalize_text(self, tokens, type):
-        if type is 'Porter':
-            porter = PorterStemmer()
-            return [porter.stem(t) for t in tokens]
-        if type is 'Lancaster':
-            lancaster = LancasterStemmer()
-            return [lancaster.stem(t) for t in tokens]
-        if type is 'Snowball':
-            snowball = SnowballStemmer('english')
-            return [snowball.stem(t) for t in tokens]
-        if type is 'Lemma':
-            lemma = WordNetLemmatizer()
-            return [lemma.lemmatize(t) for t in tokens]
-
-    def _join_words(self):
-        new_tokens = []
-        for token in self.tokens:
-            # new_tokens.append((' '.join(token)).replace('  ', ' '))
-            new_tokens.append(' '.join(token))
-        self.tokens = new_tokens
-from numpy import dot
-from numpy.linalg import norm
-
-class KMeans():
-    """."""
-
-    def __init__(self, points, type_of_kmeans='default', distance_type='euclidian'):
-        """Generate a KMeans model for a specific 'k' and a n-matrix of point.
-        It will return a model which represents the k-means cluster function
-        """
-        self.type_of_kmeans = type_of_kmeans
-        self.distance_type = distance_type
-        self.points = points
-        self.labels = []
-	## uma lista contendo os centroids mais proximos de cada ponto
-        self.lista_centroid_mais_proximos = None
-        self.plotter = KMeansPlotter()
-
-    def inicia_centroides(self, k_centroids):
-        """."""
-        centroids = self.points.copy()
-        np.random.shuffle(centroids)
-        self.centroids = centroids[:k_centroids]
-
-    def busca_centroides_mais_proximo(self):
-        """."""
-        centroids_redimensionado = self.centroids[:, np.newaxis , :]
-        if self.distance_type == 'euclidian':
-            #eleva-se a diferença ao quadrado
-            diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
-            #soma as diferenças e faz a raiz delas, obtendo as distancias euclidianas de todos os pontos para todos os centroids
-            distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
-            #identifica o centroid mais próximo de cada ponto
-            centroid_mais_proximo = np.argmin(distancias, axis=0)
-            print('Shape distancia euclidiana')
-            print(distancias.shape)
-
-
-        if self.distance_type == 'cosine_similarity':
-            cos_sim = dot(self.points, centroids_redimensionado)/(norm(self.points)*norm(centroids_redimensionado))
-            centroid_mais_proximo = np.argmin(1-cos_sim, axis=0)
-            print('Shape distancia cosseno')
-            print(cos_sim.shape)
-
-        return centroid_mais_proximo
-
-    def roda_kmeans(self, k_centroids, n_iteracoes_limite = 1000, erro = 0.001, centroid_aleatorio = None):
-        """."""
-        if centroid_aleatorio is None:
-            if self.type_of_kmeans == 'kmeans++':
-                self.inicia_centroides(1)
-                self.inicia_kmeanspp(k_centroids-1)
-            else:
-                self.inicia_centroides(k_centroids)
-        else:
-            self.centroids = centroid_aleatorio
-
-
-        MediaDistAnterior = 0.0
-        MediaDistAtual = positive_infinite
-
-        nIteracoes = 0
-        while((nIteracoes < n_iteracoes_limite) and abs(MediaDistAnterior - MediaDistAtual) > erro):
-            # Só executa se a lista de centroids não tiver sido determinada na ultima iteração
-            nIteracoes += 1
-            print("quantidade de iterações igual à " + str(nIteracoes))
-            print(str(abs(MediaDistAnterior - MediaDistAtual)))
-            if(self.lista_centroid_mais_proximos is None):
-                self.lista_centroid_mais_proximos = self.busca_centroides_mais_proximo()
-            #movimenta os centroids  a partir da lista adquirida na ultima iteração
-            self.centroids = self.movimenta_centroides(self.lista_centroid_mais_proximos)
-            MediaDistAnterior = MediaDistAtual
-            #atualiza lista de centroids mais proximos e calcula a média da distancia entre os pontos e
-            #os centroids mais proximos
-            MediaDistAtual = self.calculaMediaDistancias()
-            self.plotter.plots(self)
-
-    def movimenta_centroides(self, closest):
-        """."""
-        return np.array([self.points[closest == k].mean(axis=0) for k in range(self.centroids.shape[0])])
-
-    def calculaMediaDistancias(self ):
-
-        centroids_redimensionado = self.centroids[:, np.newaxis , :]
-        diffCordenadasAoQuadrado = (self.points - centroids_redimensionado) ** 2
-        distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=2))
-        self.lista_centroid_mais_proximos = np.argmin(distancias, axis=0)
-
-        listaDistancias = [0.0]*len(self.centroids)
-        indexlista = 0
-        #soma todas as distâncias entre os pontos e os centroids mais próximos
-        for centroid in self.lista_centroid_mais_proximos:
-            listaDistancias[centroid] += distancias[centroid][indexlista]
-            indexlista += 1
-        #tira a média da distância entre os pontos e os centroids
-        return sum(listaDistancias)
-
-    def inicia_kmeanspp(self, centroids_pedidos):
-        """."""
-        # Gera uma lista de probabilidade para cada ponto
-        lista_distancias_normalizadas = np.zeros(self.points.shape[0])
-        # print(self.points.shape)
-        # Rodamos um loop o numero de vezes que queremos de centroids
-        for novo_centroid in range(0, centroids_pedidos):
-            print("-- Escolhendo centroide " + str(novo_centroid+2))
-            # Redimensionamos o array com os centroids
-            centroids_redimensionado = self.centroids[:, np.newaxis, :]
-            print(centroids_redimensionado.shape)
-            # Elevamos a diferença de todos os pontos, a um centroi especifico, ao quadrado
-            diffCordenadasAoQuadrado = (self.points - centroids_redimensionado[novo_centroid]) ** 2
-            # Calculamos a soma da raiz para as diferenças em cada dimensão de um ponto
-            distancias = np.sqrt(diffCordenadasAoQuadrado.sum(axis=1))
-            # print('distancias')
-            # print(distancias.shape)
-            # print(distancias)
-            # Calculamos a distancia total
-            distancia_total = np.sum(distancias, axis=0)
-            # Normalizamos as distancias
-            lista_distancias_normalizadas = np.zeros(self.points.shape[0])
-            lista_distancias_normalizadas = lista_distancias_normalizadas + (distancias / distancia_total)
-            # print('lista distancias')
-            # print(lista_distancias_normalizadas.shape)
-            # print(np.sum(lista_distancias_normalizadas, axis=0))
-            # Rodamos a probabilidade
-            # print('Escolha probabilistica!')
-            rand = random.choice(np.array(self.points.shape[0]), p=lista_distancias_normalizadas)
-            # print(rand)
-            # print(np.random.choice(lista_distancias_normalizadas, p=lista_distancias_normalizadas))
-            # Adicionamos um novo centroid com base no ponto que foi selecionado
-            ponto_escolhido = self.points[rand]
-            ponto_escolhido = ponto_escolhido[np.newaxis, :]
-            # print('Comparacao')
-            # print(self.centroids.shape)
-            # print(ponto_escolhido.shape)
-            self.centroids = np.append(self.centroids, ponto_escolhido, axis=0)
-            # print('Resultado')
-            # print(self.centroids.shape)
-
-class Xmeans():
-
-    def __init__(self, points):
-        """."""
-        self.points = points
-        self.labels = []
-
-    def roda_xmeans(self, n_iteracoes = 100, trim_percentage = 0.9):
-        """."""
-        num_centroids = 2
-
-        # Instância para controle do K-Means global
-        global_kmeans = KMeans(self.points)
-        global_kmeans.roda_kmeans(num_centroids, n_iteracoes)
-
-        # Instância utilizada para K-Means locais
-        local_kmeans = KMeans(self.points)
-        for iter in range(n_iteracoes):
-
-            # Pais que não vale a pena dividir em filhos
-            ultimate_fathers = []
-
-            # Pais cujos filhos são melhores que ele
-            fathers_to_pop = []
-
-            for i in range(num_centroids):
-
-                # Como não vale a pena dividir, vai pro próximo pai
-                if i in ultimate_fathers:
-                    continue
-                    
-                points_centroid_father = get_centroid_points(i, global_kmeans.points, global_kmeans.labels)
-                father_labels = [i for j in range(len(points_centroid_father))]
-                father_centroid = global_kmeans.centroids[i]
-
-                # BIC dos centróide pai
-                bic_father = self.compute_bic(points_centroid_father, father_centroid, father_labels, 1)
-
-                # O número representa quanto do range dos pontos será utilizado
-                new_centroids = self.get_two_new_centroids(trim_percentage, father_centroid, global_kmeans.points)
-
-                # Executa K-Means local para dois filhos
-                local_kmeans.lista_centroid_mais_proximos = None
-                local_kmeans.points = points_centroid_father
-                local_kmeans.roda_kmeans(2, new_centroids)
-
-                # BIC dos centróides filhos
-                bic_children = self.compute_bic(local_kmeans.points, local_kmeans.centroids, local_kmeans.labels, 2)
-
-                # Se bic_children melhor que bic_pai, guarda índice do pai para ser removido
-                # e coloca as crianças na lista de centroids.
-                # Caso contrário guarda índice do pai no array de pais que não serão mais avaliados
-                if bic_children > bic_pai:
-                    fathers_to_pop.append(i)
-                    global_kmeans.centroids.extend(local_kmeans.centroids)
-                else:
-                    ultimate_fathers.append(i)
-
-            # Se nenhum pai virou dois filhos, os centróides são as melhores representações dos dados
-            if not fathers_to_pop:
-                return
-            
-            # Remove os pais, com índices guardados no father_to_pop, e atualiza número de centróides
-            for i in range(len(fathers_to_pop)):
-                global_kmeans.centroids.pop(fathers_to_pop[i])
-            num_centroids = len(global_kmeans.centroids)
-
-
-    # Divisão de centróides em 2
-
-    def get_centroid_points(self, i, param_points = None, param_labels = None):
-        if param_points is None:
-            param_points = self.points
-        if param_labels is None:
-            param_labels = self.labels
-
-        points_per_centroid = []
-
-        for k in range(len(param_labels)):
-            if (param_labels[k] == i):
-                points_per_centroid.append(param_points[k])
-
-        return points_per_centroid
-
-    def get_two_new_centroids(self, trim_percentage, father_centroid, param_points = None):
-        if param_points is None:
-            param_points = self.points
-
-        one_centroid = []
-        two_centroid = []
-
-        for i in range(len(param_points)):
-            range_dimension = max(param_points[i]) - min(param_points[i])
-            range_dimension = range_dimension * trim_percentage
-            range_divided = range_dimension / 2
-
-            one_centroid.append(father_centroid[i] - range_divided)
-            two_centroid.append(father_centroid[i] + range_divided)
-
-        return [one_centroid, two_centroid]
-
-    # Método para avaliação dos modelos de centróides
-
-    def compute_bic(X, centers, labels, K):
-        """Computes the BIC metric for a given clusters
-
-        Parameters:
-        -----------------------------------------
-        kmeans:  List of clustering object from scikit learn
-
-        X     :  multidimension np array of data points
-
-        Returns:
-        -----------------------------------------
-        BIC value"""
-
-        # número de pontos contidos em cada centróide
-        n = np.bincount(labels)
-
-        # size of data set
-        R, d = X.shape
-
-        # compute variance for all clusters beforehand
-        cl_var = (1.0 / (R - K) / d) * sum([sum(distance.cdist(X[np.where(labels == i)], [centers[0][i]], 'euclidean')**2) for i in range(K)])
-
-        const_term = 0.5 * K * np.log(R) * (d + 1)
-
-        BIC = np.sum([
-                    n[i] * np.log(n[i]) -
-                    n[i] * np.log(R) -
-                    ((n[i] * d) / 2) * np.log(2 * np.pi * cl_var) -
-                    ((n[i] - 1) * d / 2) for i in range(K)
-                    ]) - const_term
-
-        return(BIC)
 
 import numpy as np
 # from . import dotmap, histogram, hitmap, mapview, umatrix
@@ -950,62 +951,64 @@ from sklearn.decomposition import PCA
 import pylab as pl
 
 if __name__ == "__main__":
-	env = 'kaggle'
-	# env = 'local'
+    #env = 'kaggle'
+    env = 'local'
 
-	if env == 'kaggle':
-		preprocessor = ProcessTexts(texts=['eua_kaggle'])
-		print('----- Transformando Tokens em Matriz -----')
-		matrix = TransformMatrix(preprocessor.tokens)
-		print('----- Resultados do bag of words -----')
-		dados = matrix.get_matrix(type='tf-idf')
+    if( env == 'local'):
+        preprocessor = ProcessTexts(texts=['bbc_local'])
 
-		# ---------------------
-		# K-means
-		# print('----- Iniciando Processamento K-means -----')
-		# kmeans = KMeans(dados)
-		# kmeans.roda_kmeans(3)
+    elif env == 'kaggle':
+        preprocessor = ProcessTexts(texts=['eua_kaggle'])
+        
+    print('----- Transformando Tokens em Matriz -----')
+    matrix = TransformMatrix(preprocessor.tokens)
+    print('----- Resultados do bag of words -----')
+    dados = matrix.get_matrix(type='tf-idf')
 
-		# kmeans = KMeans(dados, type_of_kmeans='kmeans++')
-		# kmeans.roda_kmeans(3)
+    # ---------------------
+    # K-means
+    # print('----- Iniciando Processamento K-means -----')
+    # kmeans = KMeans(dados)
+    # kmeans.roda_kmeans(3)
 
-		# kmeans = KMeans(dados, type_of_kmeans='kmeans++', distance_type='cosine_similarity')
-		# kmeans.roda_kmeans(3)
+    # kmeans = KMeans(dados, type_of_kmeans='kmeans++')
+    # kmeans.roda_kmeans(3)
 
-		# ---------------------
-		# SOM
-		print('----- Iniciando Processamento SOM -----')
+    # kmeans = KMeans(dados, type_of_kmeans='kmeans++', distance_type='cosine_similarity')
+    # kmeans.roda_kmeans(3)
+    # ---------------------
+    # SOM
+    print('----- Iniciando Processamento SOM -----')
+    map_dim = 16
+    som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1)
+    som.random_weights_init(dados)
+    som.train_batch(dados, 100)
 
-		map_dim = 16
-		som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1)
-		som.random_weights_init(dados)
-		som.train_batch(dados, 100)
-
-		plt.figure(figsize=(14, 14))
-		for i, vec in enumerate(W):
-			winnin_position = som.winner(vec)
-			plt.text(winnin_position[0], winnin_position[1]+np.random.rand()*.9)
-		plt.xticks(range(map_dim))
-		plt.yticks(range(map_dim))
-		plt.grid()
-		plt.xlim([0, map_dim])
-		plt.ylim([0, map_dim])
-		plt.plot()
-		# ---------------------
-		# Plots
-		# v = View2DPacked(25, 25, 'SOM Plots',text_size=8)
-		# v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6) #which_dim='all' default
-		# v.show(som, what='codebook', which_dim=[0,1,2,3,4,5], cmap=None, col_sz=6) #which_dim='all' default
-		# v.show(som, what='codebook', which_dim='all', cmap='jet', col_sz=6) #which_dim='all' default
-		# v.save('2d_packed_test2')
-		# som.component_names = ['1','2']
-		# v = View2DPacked(2, 2, 'test',text_size=8)
-		# cl = som.cluster(n_clusters=10)
-		# getattr(som, 'cluster_labels')
-		# h = HitMapView(10, 10, 'hitmap', text_size=8, show_text=True)
-		# h.show(som)
-		# h.save('2d_packed_test3')
-		# u = UMatrixView(50, 50, 'umatrix', show_axis=True, text_size=8, show_text=True)
-		# UMAT  = u.build_u_matrix(som, distance=1, row_normalized=False)
-		# UMAT = u.show(som, distance2=1, row_normalized=False, show_data=True, contooor=True, blob=False)
-		# u.save('2d_packed_test4')
+    plt.figure(figsize=(14, 14))
+    for i, vec in enumerate(W):
+        winnin_position = som.winner(vec)
+        plt.text(winnin_position[0], winnin_position[1]+np.random.rand()*.9)
+        plt.xticks(range(map_dim))
+        plt.yticks(range(map_dim))
+        plt.grid()
+        plt.xlim([0, map_dim])
+        plt.ylim([0, map_dim])
+        plt.plot()
+        # ---------------------
+        # Plots
+        # v = View2DPacked(25, 25, 'SOM Plots',text_size=8)
+        # v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6) #which_dim='all' default
+        # v.show(som, what='codebook', which_dim=[0,1,2,3,4,5], cmap=None, col_sz=6) #which_dim='all' default
+        # v.show(som, what='codebook', which_dim='all', cmap='jet', col_sz=6) #which_dim='all' default
+        # v.save('2d_packed_test2')
+        # som.component_names = ['1','2']
+        # v = View2DPacked(2, 2, 'test',text_size=8)
+        # cl = som.cluster(n_clusters=10)
+        # getattr(som, 'cluster_labels')
+        # h = HitMapView(10, 10, 'hitmap', text_size=8, show_text=True)
+        # h.show(som)
+        # h.save('2d_packed_test3')
+        # u = UMatrixView(50, 50, 'umatrix', show_axis=True, text_size=8, show_text=True)
+        # UMAT  = u.build_u_matrix(som, distance=1, row_normalized=False)
+        # UMAT = u.show(som, distance2=1, row_normalized=False, show_data=True, contooor=True, blob=False)
+        # u.save('2d_packed_test4')

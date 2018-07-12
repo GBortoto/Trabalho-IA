@@ -20,13 +20,13 @@ class ProcessTexts():
         self._texts = []  # list of text samples
 
         if 'bbc_local' in texts:
-            for directory in sorted(os.listdir('./database/bbc_news')):
-                for file in sorted(os.listdir('./database/bbc_news/' + directory)):
-                    path = './database/bbc_news/' + directory + "/" + file
-                    f = open(path, encoding='latin-1')
-                    t = f.read()
-                    self._texts.append(t)
-                    f.close()
+            print(os.listdir('database'))
+            for file in sorted(os.listdir('database/bbc_news/')):
+                path = 'database/bbc_news/' + file
+                f = open(path, encoding='latin-1')
+                t = f.read()
+                self._texts.append(t)
+                f.close()
         if 'bbc_kaggle' in texts:
             for directory_type in sorted(os.listdir('../input/bbc news summary/BBC News Summary/')):
                 for directory in sorted(os.listdir('../input/bbc news summary/BBC News Summary/' + directory_type)):
