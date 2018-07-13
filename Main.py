@@ -17,13 +17,54 @@ from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmat
 from sklearn.decomposition import PCA
 import pylab as pl
 
+def executar( opcao , dados ):
+    if(opcao == 'T' or 'K'):
+        print('----- Iniciando Processamento K-means -----')
+        kmeans = KMeans(dados)
+        kmeans.roda_kmeans(3)
+    if(opcao == 'T' or 'S' ):
+        # SOM
+        print('----- Iniciando Processamento SOM -----')
+        som = MiniSom()
+        som.executar(dados)
+    if(opcao == 'XM'):
+        print ('código do XMeans ainda não implementado')
+    if(opcao == 'K++'):
+        print('----- Iniciando Processamento K-means++  -----')
+        kmeansPP = Kmeans(dados,'kmeans++')
+
+
+def ExecutionOptions():
+    entradaIncorreta = True
+    entradasValidas = ['K','K++','XM','S']
+    while entradaIncorreta:
+        print('Deseja executar todos os algoritmos?(S/N)')
+        entrada = input().upper()
+        if( entrada == 'N'):
+            while entradaIncorreta:
+                print('Deseja executar qual Algoritmo (KMeans , KMeans++ , XMeans , SOM )? Escreva: \n K para KMeans \n K++ para Kmeans++ \n XM para XMeans \n S para SOM ')
+                opcaoEscolhida = input().upper()
+                if opcaoEscolhida not in entradasValidas:
+                    entradaIncorreta = True
+                else:
+                    entradaIncorreta = False
+        elif(entrada == 'S'):
+            opcaoEscolhida = 'T'
+            entradaIncorreta = False
+        else:
+            entradaIncorreta = True
+
+    return opcaoEscolhida
+
 if __name__ == "__main__":
 
+    opcaoExec = ExecutionOptions()
 
+    #esse environment é o padrão por favor só altere nas suas execuções , não mude no git!!
+    env = 'local'
     if( env == 'local'):
         preprocessor = ProcessTexts(texts=['bbc_local'])
-
-    elif env == 'kaggle':
+    elif (env == 'kaggle'):
         preprocessor = ProcessTexts(texts=['eua_kaggle'])
 
     print('----- Transformando Tokens em Matriz -----')
@@ -31,103 +72,4 @@ if __name__ == "__main__":
     print('----- Resultados do bag of words -----')
     dados = matrix.get_matrix(type='tf-idf')
 
-    # ---------------------
-    # K-means
-    # print('----- Iniciando Processamento K-means -----')
-    # kmeans = KMeans(dados)
-    # kmeans.roda_kmeans(3)
-
-    # kmeans = KMeans(dados, type_of_kmeans='kmeans++')
-    # kmeans.roda_kmeans(3)
-
-    # kmeans = KMeans(dados, type_of_kmeans='kmeans++', distance_type='cosine_similarity')
-    # kmeans.roda_kmeans(3)
-    # ---------------------
-    # SOM
-    print('----- Iniciando Processamento SOM -----')
-    map_dim = 16
-    som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1)
-    som.random_weights_init(dados)
-    som.train_batch(dados, 100)
-
-    plt.figure(figsize=(14, 14))
-    for i, vec in enumerate(W):
-        winnin_position = som.winner(vec)
-        plt.text(winnin_position[0], winnin_position[1]+np.random.rand()*.9)
-        plt.xticks(range(map_dim))
-        plt.yticks(range(map_dim))
-        plt.grid()
-        plt.xlim([0, map_dim])
-        plt.ylim([0, map_dim])
-        plt.plot()
-        # ---------------------
-        # Plots
-        # v = View2DPacked(25, 25, 'SOM Plots',text_size=8)
-        # v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6) #which_dim='all' default
-        # v.show(som, what='codebook', which_dim=[0,1,2,3,4,5], cmap=None, col_sz=6) #which_dim='all' default
-        # v.show(som, what='codebook', which_dim='all', cmap='jet', col_sz=6) #which_dim='all' default
-        # v.save('2d_packed_test2')
-        # som.component_names = ['1','2']
-        # v = View2DPacked(2, 2, 'test',text_size=8)
-        # cl = som.cluster(n_clusters=10)
-        # getattr(som, 'cluster_labels')
-        # h = HitMapView(10, 10, 'hitmap', text_size=8, show_text=True)
-        # h.show(som)
-        # h.save('2d_packed_test3')
-        # u = UMatrixView(50, 50, 'umatrix', show_axis=True, text_size=8, show_text=True)
-        # UMAT  = u.build_u_matrix(som, distance=1, row_normalized=False)
-        # UMAT = u.show(som, distance2=1, row_normalized=False, show_data=True, contooor=True, blob=False)
-        # u.save('2d_packed_test4')
-		# ---------------------
-		# K-means
-		# print('----- Iniciando Processamento K-means -----')
-		# kmeans = KMeans(dados)
-		# kmeans.roda_kmeans(3)
-
-		# kmeans = KMeans(dados, type_of_kmeans='kmeans++')
-		# kmeans.roda_kmeans(3)
-
-		# kmeans = KMeans(dados, type_of_kmeans='kmeans++', distance_type='cosine_similarity')
-		# kmeans.roda_kmeans(3)
-
-		# ---------------------
-		# SOM
-		print('----- Iniciando Processamento SOM -----')
-
-		map_dim = 16
-		som = MiniSom(map_dim, map_dim, dados.shape[1], sigma=1.0, random_seed=1)
-		som.random_weights_init(dados)
-		som.train_batch(dados, 100)
-
-		plt.figure(figsize=(14, 14))
-		for i, vec in enumerate(W):
-			winnin_position = som.winner(vec)
-			plt.text(winnin_position[0], winnin_position[1]+np.random.rand()*.9)
-		plt.xticks(range(map_dim))
-		plt.yticks(range(map_dim))
-		plt.grid()
-		plt.xlim([0, map_dim])
-		plt.ylim([0, map_dim])
-		plt.plot()
-		# ---------------------
-		# Plots
-		# v = View2DPacked(25, 25, 'SOM Plots',text_size=8)
-		# v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6) #which_dim='all' default
-		# v.show(som, what='codebook', which_dim=[0,1,2,3,4,5], cmap=None, col_sz=6) #which_dim='all' default
-		# v.show(som, what='codebook', which_dim='all', cmap='jet', col_sz=6) #which_dim='all' default
-		# v.save('2d_packed_test2')
-		# som.component_names = ['1','2']
-		# v = View2DPacked(2, 2, 'test',text_size=8)
-		# cl = som.cluster(n_clusters=10)
-		# getattr(som, 'cluster_labels')
-		# h = HitMapView(10, 10, 'hitmap', text_size=8, show_text=True)
-		# h.show(som)
-		# h.save('2d_packed_test3')
-		# u = UMatrixView(50, 50, 'umatrix', show_axis=True, text_size=8, show_text=True)
-		# UMAT  = u.build_u_matrix(som, distance=1, row_normalized=False)
-		# UMAT = u.show(som, distance2=1, row_normalized=False, show_data=True, contooor=True, blob=False)
-		# u.save('2d_packed_test4')
-
-		print('----- Iniciando Processamento K-means -----')
-		kmeans = KMeans(dados)
-		kmeans.roda_kmeans(3)
+    executar(opcaoExec)
