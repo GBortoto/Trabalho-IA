@@ -1,35 +1,38 @@
 
-import numpy as np
 # from . import dotmap, histogram, hitmap, mapview, umatrix
-import os
-import string
-import tensorflow as tf
-import matplotlib.pyplot as plt
-from math import inf as positive_infinite
-from scipy.spatial import distance
-from sklearn.cluster import KMeans as KMeansDefault
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn.preprocessing import StandardScaler
-from nltk.tokenize import word_tokenize, sent_tokenize
-from nltk.corpus import stopwords
-from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
+# import os
+# import string
+# import tensorflow as tf
+# import matplotlib.pyplot as plt
+# from math import inf as positive_infinite
+# from scipy.spatial import distance
+# from sklearn.cluster import KMeans as KMeansDefault
+# from sklearn.feature_extraction.text import CountVectorizer
+# from sklearn.feature_extraction.text import TfidfTransformer
+# from sklearn.preprocessing import StandardScaler
+# from nltk.tokenize import word_tokenize, sent_tokenize
+# from nltk.corpus import stopwords
+# from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
 from sklearn.decomposition import PCA
 import pylab as pl
+from KMeans.KMeans import KMeans
+from Helpers.Matrix import TransformMatrix
+from Helpers.process_zoo import ProcessZoo
+from Som.Som import SOM
 
 def executar( opcao , dados ):
-    if(opcao == 'T' or 'K'):
+    if(opcao == 'T' or opcao == 'K'):
         print('----- Iniciando Processamento K-means -----')
         kmeans = KMeans(dados)
         kmeans.roda_kmeans(3)
-    if(opcao == 'T' or 'S' ):
+    if(opcao == 'T' or opcao == 'S' ):
         # SOM
         print('----- Iniciando Processamento SOM -----')
-        som = MiniSom()
+        som = SOM()
         som.executar(dados)
-    if(opcao == 'XM'):
+    if(opcao == 'T' or opcao == 'XM'):
         print ('código do XMeans ainda não implementado')
-    if(opcao == 'K++'):
+    if(opcao == 'T' or opcao == 'K++'):
         print('----- Iniciando Processamento K-means++  -----')
         kmeansPP = Kmeans(dados,'kmeans++')
 
@@ -60,16 +63,7 @@ if __name__ == "__main__":
 
     opcaoExec = ExecutionOptions()
 
-    #esse environment é o padrão por favor só altere nas suas execuções , não mude no git!!
-    env = 'local'
-    if( env == 'local'):
-        preprocessor = ProcessTexts(texts=['bbc_local'])
-    elif (env == 'kaggle'):
-        preprocessor = ProcessTexts(texts=['eua_kaggle'])
+    pre_process = ProcessZoo()
+    dados = pre_process.get_original_matrix()
 
-    print('----- Transformando Tokens em Matriz -----')
-    matrix = TransformMatrix(preprocessor.tokens)
-    print('----- Resultados do bag of words -----')
-    dados = matrix.get_matrix(type='tf-idf')
-
-    executar(opcaoExec)
+    executar(opcaoExec , dados)
