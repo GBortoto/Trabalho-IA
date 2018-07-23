@@ -62,6 +62,7 @@ class KMeansPlotter():
         self.dirName = self.makedir()
         """."""
         plt = self.createPlotPoints(kmeans , animal_names)
+        plt.axis('equal')
 
         if save is False:
             plt.show()
@@ -73,8 +74,8 @@ class KMeansPlotter():
 
     def createPlotPoints(self, kmeans , animal_names):
          ##algumas variaveis de plotagem
-        areaPoints = 10
-        areaCentroid = 150
+        areaPoints = 40
+        areaCentroid = 100
 
         ##lista com todos os pontos do gráfico
 
