@@ -13,18 +13,21 @@
 # from nltk.tokenize import word_tokenize, sent_tokenize
 # from nltk.corpus import stopwords
 # from nltk import PorterStemmer, LancasterStemmer, SnowballStemmer, WordNetLemmatizer
-from sklearn.decomposition import PCA
 import pylab as pl
 from KMeans.KMeans import KMeans
 from Helpers.Matrix import TransformMatrix
 from Helpers.process_zoo import ProcessZoo
 from Som.Som import SOM
+from KMeans.KMeansPlotter import KMeansPlotter
 
-def executar( opcao , dados ):
+def executar( opcao , dados , animal_names):
     if(opcao == 'T' or opcao == 'K'):
         print('----- Iniciando Processamento K-means -----')
         kmeans = KMeans(dados)
-        kmeans.roda_kmeans(3)
+        kmeans.roda_kmeans(5 ,0.0001)
+        plotter = KMeansPlotter()
+        plotter.plots(kmeans , animal_names)
+
     if(opcao == 'T' or opcao == 'S' ):
         # SOM
         print('----- Iniciando Processamento SOM -----')
@@ -65,5 +68,6 @@ if __name__ == "__main__":
 
     pre_process = ProcessZoo()
     dados = pre_process.get_original_matrix()
+    animal_names = pre_process.get_animals_names()
 
-    executar(opcaoExec , dados)
+    executar(opcaoExec , dados , animal_names)

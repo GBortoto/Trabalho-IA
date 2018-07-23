@@ -1,5 +1,7 @@
 from numpy import dot
 from numpy.linalg import norm
+import numpy as np
+import math
 
 class KMeans():
     """."""
@@ -14,7 +16,6 @@ class KMeans():
         self.labels = []
 	## uma lista contendo os centroids mais proximos de cada ponto
         self.lista_centroid_mais_proximos = None
-        self.plotter = KMeansPlotter()
 
     def inicia_centroides(self, k_centroids):
         """."""
@@ -57,7 +58,7 @@ class KMeans():
 
 
         MediaDistAnterior = 0.0
-        MediaDistAtual = positive_infinite
+        MediaDistAtual = float("inf") #positive_infinite
 
         nIteracoes = 0
         while((nIteracoes < n_iteracoes_limite) and abs(MediaDistAnterior - MediaDistAtual) > erro):
@@ -73,7 +74,6 @@ class KMeans():
             #atualiza lista de centroids mais proximos e calcula a média da distancia entre os pontos e
             #os centroids mais proximos
             MediaDistAtual = self.calculaMediaDistancias()
-            self.plotter.plots(self)
 
     def movimenta_centroides(self, closest):
         """."""
