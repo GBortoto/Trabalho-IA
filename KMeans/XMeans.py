@@ -1,5 +1,7 @@
+from Indices.Silhouette import Silhouette
+from KMeans.KMeans import KMeans
 
-class Xmeans():
+class XMeans():
 
     def __init__(self, points):
         """."""
@@ -9,16 +11,17 @@ class Xmeans():
     def roda_xmeans(self, n_iteracoes = 100, trim_percentage = 0.9):
         """."""
         num_centroids = 2
+        silhouette = Silhouette()
 
         # Instância para controle do K-Means global
         global_kmeans = KMeans(self.points)
-        global_kmeans.roda_kmeans(num_centroids, n_iteracoes)
+        global_kmeans.roda_kmeans(num_centroids)
 
         # Instância utilizada para K-Means locais
         local_kmeans = KMeans(self.points)
         for iter in range(n_iteracoes):
 
-            # Pais que não vale a pena dividir em filhos
+            # Pais que não valem a pena dividir em filhos
             ultimate_fathers = []
 
             # Pais cujos filhos são melhores que ele
@@ -30,12 +33,13 @@ class Xmeans():
                 if i in ultimate_fathers:
                     continue
                     
-                points_centroid_father = get_centroid_points(i, global_kmeans.points, global_kmeans.labels)
+                points_centroid_father = self.get_centroid_points(i, global_kmeans.points, global_kmeans.lista_centroid_mais_proximos)
                 father_labels = [i for j in range(len(points_centroid_father))]
                 father_centroid = global_kmeans.centroids[i]
 
-                # BIC dos centróide pai
-                bic_father = self.compute_bic(points_centroid_father, father_centroid, father_labels, 1)
+                # Silhouette dos centróide pai
+                #silhouette_father = silhouette.groupSilhouette(i, points_centroid_father, father_labels)
+                silhouette_father = 1
 
                 # O número representa quanto do range dos pontos será utilizado
                 new_centroids = self.get_two_new_centroids(trim_percentage, father_centroid, global_kmeans.points)
@@ -43,15 +47,16 @@ class Xmeans():
                 # Executa K-Means local para dois filhos
                 local_kmeans.lista_centroid_mais_proximos = None
                 local_kmeans.points = points_centroid_father
-                local_kmeans.roda_kmeans(2, new_centroids)
+                local_kmeans.roda_kmeans(k_centroids=2, centroid_aleatorio=new_centroids)
 
-                # BIC dos centróides filhos
-                bic_children = self.compute_bic(local_kmeans.points, local_kmeans.centroids, local_kmeans.labels, 2)
+                # Silhouette dos centróides filhos
+                #silhouette_children = silhouette.allGroupsSilhouette(local_kmeans.points, local_kmeans.labels)
+                silhouette_children = 0
 
-                # Se bic_children melhor que bic_pai, guarda índice do pai para ser removido
+                # Se silhouette_children melhor que silhouette_pai, guarda índice do pai para ser removido
                 # e coloca as crianças na lista de centroids.
                 # Caso contrário guarda índice do pai no array de pais que não serão mais avaliados
-                if bic_children > bic_pai:
+                if silhouette_children > silhouette_father:
                     fathers_to_pop.append(i)
                     global_kmeans.centroids.extend(local_kmeans.centroids)
                 else:
@@ -90,48 +95,14 @@ class Xmeans():
         one_centroid = []
         two_centroid = []
 
-        for i in range(len(param_points)):
+        for i in range(len(param_points[0])):
             range_dimension = max(param_points[i]) - min(param_points[i])
             range_dimension = range_dimension * trim_percentage
             range_divided = range_dimension / 2
 
-            one_centroid.append(father_centroid[i] - range_divided)
-            two_centroid.append(father_centroid[i] + range_divided)
+            one_centroid.append(father_centroid - range_divided)
+            two_centroid.append(father_centroid + range_divided)
 
         return [one_centroid, two_centroid]
 
-    # Método para avaliação dos modelos de centróides
-
-    def compute_bic(X, centers, labels, K):
-        """Computes the BIC metric for a given clusters
-
-        Parameters:
-        -----------------------------------------
-        kmeans:  List of clustering object from scikit learn
-
-        X     :  multidimension np array of data points
-
-        Returns:
-        -----------------------------------------
-        BIC value"""
-
-        # número de pontos contidos em cada centróide
-        n = np.bincount(labels)
-
-        # size of data set
-        R, d = X.shape
-
-        # compute variance for all clusters beforehand
-        cl_var = (1.0 / (R - K) / d) * sum([sum(distance.cdist(X[np.where(labels == i)], [centers[0][i]], 'euclidean')**2) for i in range(K)])
-
-        const_term = 0.5 * K * np.log(R) * (d + 1)
-
-        BIC = np.sum([
-                    n[i] * np.log(n[i]) -
-                    n[i] * np.log(R) -
-                    ((n[i] * d) / 2) * np.log(2 * np.pi * cl_var) -
-                    ((n[i] - 1) * d / 2) for i in range(K)
-                    ]) - const_term
-
-        return(BIC)
 
