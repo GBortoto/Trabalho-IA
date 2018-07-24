@@ -19,12 +19,14 @@ from Helpers.Matrix import TransformMatrix
 from Helpers.process_zoo import ProcessZoo
 from Som.Som import SOM
 from KMeans.KMeansPlotter import KMeansPlotter
+from Indices.Silhouette import Silhouette
+from Indices.SilhouettePlotter import SilhouettePlotter
 
 def executar( opcao , dados , animal_names):
     if(opcao == 'T' or opcao == 'K'):
         print('----- Iniciando Processamento K-means -----')
         kmeans = KMeans(dados)
-        kmeans.roda_kmeans(5 ,0.0001)
+        kmeans.roda_kmeans(5 ,1000, 0.0001)
         plotter = KMeansPlotter()
         plotter.plots(kmeans , animal_names)
 
@@ -38,17 +40,26 @@ def executar( opcao , dados , animal_names):
     if(opcao == 'T' or opcao == 'K++'):
         print('----- Iniciando Processamento K-means++  -----')
         kmeansPP = Kmeans(dados,'kmeans++')
-
-
+    if(opcao == 'T' or opcao == 'SL'):
+        dictionary_nroClusters_Silhouette = {}
+        for nroDeClusters in range(2 , 11):
+            kmeans = KMeans(dados)
+            print(nroDeClusters)
+            kmeans.roda_kmeans(nroDeClusters,1000, 0.0001)
+            silhouette = Silhouette()
+            valorSilhouette = silhouette.allGroupsSilhouette(kmeans.points,kmeans.lista_centroid_mais_proximos)
+            dictionary_nroClusters_Silhouette[nroDeClusters] = valorSilhouette
+        plotter = SilhouettePlotter()
+        plotter.plots(dictionary_nroClusters_Silhouette)
 def ExecutionOptions():
     entradaIncorreta = True
-    entradasValidas = ['K','K++','XM','S']
+    entradasValidas = ['K','K++','XM','S', 'SL']
     while entradaIncorreta:
         print('Deseja executar todos os algoritmos?(S/N)')
         entrada = input().upper()
         if( entrada == 'N'):
             while entradaIncorreta:
-                print('Deseja executar qual Algoritmo (KMeans , KMeans++ , XMeans , SOM )? Escreva: \n K para KMeans \n K++ para Kmeans++ \n XM para XMeans \n S para SOM ')
+                print('Deseja executar qual Algoritmo (KMeans , KMeans++ , XMeans , SOM , Silhouette )? Escreva: \n K para KMeans \n K++ para Kmeans++ \n XM para XMeans \n S para SOM \n SL para Silhouette ')
                 opcaoEscolhida = input().upper()
                 if opcaoEscolhida not in entradasValidas:
                     entradaIncorreta = True

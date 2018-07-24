@@ -14,7 +14,6 @@ class ProcessZoo():
 
     def _read_text(self):
         """."""
-        print(os.listdir())
         df = pd.read_csv('database/zoo.csv', delimiter=',', header=None)
         self.animal_names = df.ix[:,0].tolist()
         new_df = df.drop(df.columns[0], axis=1)

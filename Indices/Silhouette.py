@@ -1,3 +1,4 @@
+
 '''
 Índice Silhouette
 
@@ -24,6 +25,9 @@ Referência: "Técnica de Agrupamento (Clustering)"
             Sarajane M. Peres e Clodoaldo A. M. Lima
             Slides 127-132
 '''
+import numpy as np
+import math
+import pdb
 
 class Silhouette():
 
@@ -33,13 +37,22 @@ class Silhouette():
     # ------------------ Funções de conversão ----------------------------------
 
     def getAllGroups(self, points, labels):
-        return [getGroupFromLabel(points, labels, i) for i in range(len(set(labels)))]
+        groups = []
+        indice = 0
+        for label in  labels:
+            try:
+                groups[label].append(points[indice])
+            except IndexError:
+                group = [points[indice]]
+                groups.insert(label , group)
+            indice +=1
+        return groups
 
     def getGroupFromLabel(self, points, labels, label):
-        return [a[i] for i in range(len(points)) if labels[i] == label]
+        return [points[i] for i in range(len(points)) if labels[i] == label]
 
     def getGroupOfPoint(self, point, points, labels):
-        group = getGroupFromLabel(points, labels, labels[points.index(point)])
+        group = self.getGroupFromLabel(points, labels, labels[points.index(point)])
 
     # ------------------ Funções de distância ----------------------------------
 
@@ -52,11 +65,14 @@ class Silhouette():
 
         distance = -1
         if(typeOfDistance == 'euclidean'):
-            distance = sqrt(sum([(pointA[i] - pointB[i])**2 for i in range(numberOfDimentions)]))
+            #distance = numpy.linalg.norm(pointA-pointB)
+
+            distance = math.sqrt(sum([(pointA[i] - pointB[i])**2 for i in range(numberOfDimentions)]))
+
         elif(typeOfDistance == 'cosine similarity'):
             distance = sum([pointA[i] * pointB[i] for i in range(numberOfDimentions)])/ (
-                              sqrt(sum([pointA[i]**2 for i in range(numberOfDimentions)]))
-                            * sqrt(sum([pointB[i]**2 for i in range(numberOfDimentions)]))
+                              math.sqrt(sum([pointA[i]**2 for i in range(numberOfDimentions)]))
+                            * math.sqrt(sum([pointB[i]**2 for i in range(numberOfDimentions)]))
                         )
         # Caso o tipo de cálculo de distância seja inválido, o método jogará o erro
         if(distance == -1):
@@ -65,13 +81,24 @@ class Silhouette():
 
     def meanDistanceBetweenPointAndGroup(self, point, group, typeOfDistance):
         """Retorna a média das distâncias entre o ponto recebido e todos os pontos do grupo recebido"""
-        groupSize = len(group)
-        if(group.index(point) != -1):
+        groupSize = 0
+        try:
+            groupSize = len(group)
+        except (TypeError):
+            print("Valor do grupo é: "+str(group))
+            groupSize = group.shape[0]
+
+        if(self.indexOf(group , point) != -1):
             groupSize -= 1
-        return sum(
-            [distanceBetweenPointAndPoint(point, group[i], typeOfDistance)
-             for i in range(len(group)) if point != group[i]]
-            ) / groupSize
+
+        if groupSize == 0:
+            return float("inf")
+
+        else:
+            return sum(
+            [self.distanceBetweenPointAndPoint(point, group[i], typeOfDistance)
+             for i in range( 0 , groupSize-1 ) if not np.array_equal(point , group[i])
+            ]) / groupSize
 
     def findNearestGroup(self, point, groupOfPoint, groups, typeOfDistance):
         """Encontra o grupo mais próximo do ponto recebido"""
@@ -79,49 +106,59 @@ class Silhouette():
         # Cria uma lista de todos os grupos exceto o grupo atual do ponto
         # Calcula as médias de distância entre o ponto e todos os grupos da lista criada acima
         # Retorna o grupo que possui a menor distância média em relação ao ponto
+        otherGroups = np.copy(groups)
 
-        otherGroups = groups.remove(groupOfPoint)
-        means = [meanDistanceBetweenPointAndGroup(point, otherGroups[i], typeOfDistance)
-                 for i in range(len(otherGroups))]
+        grupo = self.indexOf(groups , groupOfPoint)
+
+        otherGroups = np.delete(otherGroups , grupo , axis=0)
+
+        means = []
+
+        for index in range(0,len(otherGroups)):
+            meanDistance = self.meanDistanceBetweenPointAndGroup(point , otherGroups[index], typeOfDistance)
+            means.append(meanDistance)
+
         return otherGroups[means.index(min(means))]
 
 
     # ------------------- Funções Públicas -------------------------------------
 
-    def pointSilhouette(self, point, points, labels, typeOfDistance='euclidean'):
+    def pointSilhouette(self, point, group, groups, typeOfDistance='euclidean'):
         """Calcula o índice Silhouette para um dado"""
-        groupOfPoint = getGroupOfPoint(point, points, labels)
-        groups = getAllGroups(points, labels)
 
         # Retorna o cálculo do índice Silhouette para o ponto (Axioma 1)
-        Ai = meanDistanceBetweenPointAndGroup(point,
-                                              groupOfPoint,
+        Ai = self.meanDistanceBetweenPointAndGroup(point,
+                                              group,
                                               typeOfDistance)
 
-        Bi = meanDistanceBetweenPointAndGroup(point,
-                                              findNearestGroup(point, groupOfPoint, groups),
+        Bi = self.meanDistanceBetweenPointAndGroup(point,
+                                              self.findNearestGroup(point, group, groups,typeOfDistance),
                                               typeOfDistance)
+
         return (Bi - Ai) / max(Ai, Bi)
 
-    def groupSilhouette(self, label, points, labels, typeOfDistance='euclidean'):
+    def groupSilhouette(self, group, groups, typeOfDistance='euclidean'):
         """Calcula o índice Silhouette para um grupo de dados"""
-
-        group = getGroupFromLabel(points, labels, label)
-        groups = getAllGroups(points, labels)
 
         # Retorna a média dos silhouetes dos dados no grupo (Axioma 2)
         return sum(
-            [pointSilhouette(group[i], points, labels, typeOfDistance)
+            [self.pointSilhouette(group[i], group, groups, typeOfDistance)
              for i in range(len(group))]
             )/len(group)
 
     def allGroupsSilhouette(self, points, labels, typeOfDistance='euclidean'):
         """Calcula o índice Silhouette para um grupo de grupos de dados"""
 
-        groups = getAllGroups(points, labels)
+        groups = self.getAllGroups(points, labels)
 
         # Retorna a média dos silhouetes dos grupos de dados (Axioma 3)
         return sum(
-            [groupSilhouette(groups[i], groups, typeOfDistance)
+            [self.groupSilhouette(groups[i], groups, typeOfDistance)
              for i in range(len(groups))]
             )/len(groups)
+
+    def indexOf(self, arrayPrincipal , arrayBuscado ):
+        for indice in range(0,len(arrayPrincipal)):
+            if np.array_equal(arrayPrincipal[indice] , arrayBuscado):
+                return indice
+        return -1

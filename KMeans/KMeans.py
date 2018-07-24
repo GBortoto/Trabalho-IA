@@ -66,6 +66,8 @@ class KMeans():
             nIteracoes += 1
             print("quantidade de iterações igual à " + str(nIteracoes))
             print(str(abs(MediaDistAnterior - MediaDistAtual)))
+            print("valor da distancia da media anterior: " + str(MediaDistAnterior))
+            print("valor da distancia da media atual: " + str(MediaDistAtual))
             if(self.lista_centroid_mais_proximos is None):
                 self.lista_centroid_mais_proximos = self.busca_centroides_mais_proximo()
             #movimenta os centroids  a partir da lista adquirida na ultima iteração
@@ -75,9 +77,24 @@ class KMeans():
             #os centroids mais proximos
             MediaDistAtual = self.calculaMediaDistancias()
 
+            print("valor da distancia anterior depois da atualização  : " + str(MediaDistAnterior))
+            print("valor da distancia atual depois da atualização: " + str(MediaDistAtual))
+
     def movimenta_centroides(self, closest):
         """."""
-        return np.array([self.points[closest == k].mean(axis=0) for k in range(self.centroids.shape[0])])
+        listaDeCentroids = []
+        for centroid in closest:
+            if not centroid in listaDeCentroids:
+                listaDeCentroids.append(centroid)
+
+        centroids = np.array([self.points[closest == k].mean(axis=0) for k in listaDeCentroids])
+
+        listaResultado = [item for item in range(self.centroids.shape[0]) if item not in listaDeCentroids]
+
+        for valor in listaResultado:
+            centroids = np.insert(centroids , valor , self.centroids[valor] , axis=0 )
+
+        return centroids
 
     def calculaMediaDistancias(self ):
 
